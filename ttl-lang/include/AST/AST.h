@@ -296,35 +296,22 @@ public:
 };
 
 class ForLoop : public Statement {
-  ForLoop(const std::string &InitID, ExprPtr InitExpr, ExprPtr Cond,
-          const std::string &IncID, ExprPtr IncExpr, StmtPtr Body)
-      : InitID{InitID}, InitExpr{InitExpr}, Cond{Cond}, IncID{IncID},
-        IncExpr{IncExpr}, Body{Body} {}
+  ForLoop(const std::string &Name, ExprPtr IdxRange, ExprPtr Step, StmtPtr Body)
+      : Name{Name}, IdxRange{IdxRange}, Step{Step}, Body{Body} {}
 
-  std::string InitID;
-  VarRefPtr InitRef = nullptr;
-  ExprPtr InitExpr;
-  ExprPtr Cond;
-  std::string IncID;
-  VarRefPtr IncRef = nullptr;
-  ExprPtr IncExpr;
+  std::string Name;
+  ExprPtr IdxRange;
+  ExprPtr Step;
   StmtPtr Body;
 
   friend ASTContext;
 
 public:
-  const std::string &initID() { return InitID; }
-  void initRef(VarRefPtr Ref) { InitRef = Ref; }
-  VarRefPtr initRef() { return InitRef; }
-  ExprPtr initExpr() { return InitExpr; }
-  ExprPtr cond() { return Cond; }
-  const std::string &incID() { return IncID; }
-  void incRef(VarRefPtr Ref) { IncRef = Ref; }
-  VarRefPtr incRef() { return IncRef; }
-  ExprPtr incExpr() { return IncExpr; }
+  const std::string &name() { return Name; }
+  ExprPtr range() { return IdxRange; }
+  ExprPtr step() { return Step; } 
   StmtPtr body() { return Body; }
 
-  bool resolved() { return InitRef != nullptr && IncRef != nullptr; }
 };
 
 class CallStmt : public Statement {

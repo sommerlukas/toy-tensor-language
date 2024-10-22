@@ -25,7 +25,7 @@ lhsID:          ID '[' expr (',' expr)* ']'                                     
                 | ID                                                              # PrimAssign
                 ;
 callStmt:       callExpr ';' ;
-forLoop:        'for' '(' ID '=' expr ';' expr ';' ID '=' expr ')' statement ;
+forLoop:        'for' '(' ID 'in' expr 'by' expr ')' statement ;
 ifStmt:         'if' '(' expr ')' statement ('else' statement)?;
 returnStmt:     'return' expr ';' ;
 compoundStmt:   '{' statement* '}' ;

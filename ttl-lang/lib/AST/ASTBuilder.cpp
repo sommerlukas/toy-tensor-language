@@ -110,14 +110,11 @@ std::any ASTBuilder::visitCallStmt(TTLParser::CallStmtContext *ctx) {
 }
 
 std::any ASTBuilder::visitForLoop(TTLParser::ForLoopContext *ctx) {
-  std::string InitName = ctx->ID(0)->getText();
-  std::string IncName = ctx->ID(1)->getText();
-  auto InitValue = std::any_cast<ExprPtr>(ctx->expr(0)->accept(this));
-  auto Cond = std::any_cast<ExprPtr>(ctx->expr(1)->accept(this));
-  auto IncValue = std::any_cast<ExprPtr>(ctx->expr(2)->accept(this));
+  std::string Name = ctx->ID()->getText();
+  auto IdxRange = std::any_cast<ExprPtr>(ctx->expr(0)->accept(this));
+  auto Step = std::any_cast<ExprPtr>(ctx->expr(1)->accept(this));
   auto Body = std::any_cast<StmtPtr>(ctx->statement()->accept(this));
-  return createStmt<ForLoop>(InitName, InitValue, Cond, IncName, IncValue,
-                             Body);
+  return createStmt<ForLoop>(Name, IdxRange, Step, Body);
 }
 
 std::any ASTBuilder::visitIfStmt(TTLParser::IfStmtContext *ctx) {
