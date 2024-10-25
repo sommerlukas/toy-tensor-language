@@ -59,10 +59,35 @@ def Range : TTLOp<"range"> {
   }];
 }
 
-def TensorInit : TTLOp<"tensor_init"> {
+def TensorScalarInit : TTLOp<"tensor_scalar_init"> {
+  let summary = "TTL initialize tensor with scalar value";
+
+  let arguments = (ins TTLScalarType:$initVal);
+
+  let results = (outs TTLTensorType:$tensor);
+}
+
+def TensorRangeInit : TTLOp<"tensor_range_init"> {
+  let summary = "TTL initialize tensor with range";
+
+  let arguments = (ins TTLRangeType:$range);
+
+  let results = (outs TTLTensorType:$tensor);
+}
+
+def TensorListInit : TTLOp<"tensor_list_init"> {
   let summary = "TTL initialize tensor";
 
   let arguments = (ins Variadic<TTLScalarType>:$elements);
+
+  let results = (outs TTLTensorType:$tensor);
+}
+
+def TensorInsert : TTLOp<"tensor_insert"> {
+  let summary = "TTL assign tensor element";
+
+  let arguments = (ins TTLTensorType:$dest, TTLScalarType:$value, 
+                        Variadic<TTLIntType>:$indices);
 
   let results = (outs TTLTensorType:$tensor);
 }
