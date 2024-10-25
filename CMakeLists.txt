@@ -31,4 +31,5 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 # Place all tools in the "bin" directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+add_subdirectory(mlir)
 add_subdirectory(ttl-lang)
