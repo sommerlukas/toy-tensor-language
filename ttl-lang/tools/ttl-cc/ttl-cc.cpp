@@ -1,9 +1,15 @@
 #include "ASTBuilder.h"
 #include "ASTContext.h"
+#include "CodeGen.h"
+#include "Dialect/TTL/TTLDialect.h"
+#include "Sema.h"
 #include "TTLANTLRParser.h"
 #include "TTLParserContext.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/MLIRContext.h"
 #include "llvm/Support/CommandLine.h"
-#include "Sema.h"
 
 using namespace llvm;
 using namespace ttl::parser;
@@ -36,4 +42,14 @@ int main(int argc, char **argv) {
       std::any_cast<ttl::ast::Module *>(ParsedModule->accept(&Builder));
 
   ttl::sema::Sema::run(ASTModule);
+
+  mlir::MLIRContext MLIRCtx;
+
+  MLIRCtx.getOrLoadDialect<mlir::ttl::TTLDialect>();
+  MLIRCtx.getOrLoadDialect<mlir::scf::SCFDialect>();
+  MLIRCtx.getOrLoadDialect<mlir::func::FuncDialect>();
+
+  mlir::ModuleOp MLIRModule =
+      ttl::codegen::CodeGen::generate(ASTModule, &MLIRCtx);
+  MLIRModule.dump();
 }

@@ -121,6 +121,7 @@ void SemaVisitor::visit(VarDef *Node) {
   }
   if (Node->hasInit()) {
     Node->init()->accept(this);
+    // TODO: Handle case of matrix init
     checkTypeMatch(Node, Node->ty(), Node->init()->ty());
   }
 }
