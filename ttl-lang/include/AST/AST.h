@@ -376,6 +376,11 @@ class StatementBase : public ASTNodePtrBase {
 public:
   virtual ~StatementBase() = default;
   virtual void accept(ASTVisitor *visitor) = 0;
+  virtual bool isReturn() { return false; }
+  virtual VarRefPtr assigns() { return nullptr; }
+  virtual bool isCompound() { return false; }
+  virtual bool isForLoop() { return false; }
+  virtual bool isIfStmt() { return false; }
 };
 
 template <typename Derived> class Statement : public StatementBase {
@@ -398,6 +403,8 @@ class CompoundStmt : public Statement<CompoundStmt> {
 
 public:
   llvm::ArrayRef<StmtPtr> statements() { return Statements; }
+
+  bool isCompound() override { return true; }
 };
 
 class ReturnStmt : public Statement<ReturnStmt> {
@@ -409,6 +416,8 @@ class ReturnStmt : public Statement<ReturnStmt> {
 
 public:
   ExprPtr retVal() { return RetVal; }
+
+  bool isReturn() override { return true; }
 };
 
 class IfStmt : public Statement<IfStmt> {
@@ -428,6 +437,7 @@ public:
   StmtPtr then() { return Then; }
   StmtPtr elseStmt() { return Else; }
   bool hasElse() { return Else != nullptr; }
+  bool isIfStmt() override { return true; }
 };
 
 class ForLoop : public Statement<ForLoop> {
@@ -446,6 +456,7 @@ public:
   ExprPtr range() { return IdxRange; }
   ExprPtr step() { return Step; }
   StmtPtr body() { return Body; }
+  bool isForLoop() override { return true; }
 };
 
 class CallStmt : public Statement<CallStmt> {
@@ -475,6 +486,7 @@ public:
   void ref(VarRefPtr IDRef) { Ref = IDRef; }
   VarRefPtr ref() { return Ref; }
   bool resolved() { return Ref != nullptr; }
+  VarRefPtr assigns() override { return Ref; }
 };
 
 class MatrixAssign : public Statement<MatrixAssign> {
@@ -497,6 +509,7 @@ public:
   VarRefPtr ref() { return Ref; }
   bool resolved() { return Ref != nullptr; }
   llvm::ArrayRef<ExprPtr> indices() { return Index; }
+  VarRefPtr assigns() override { return Ref; }
 };
 
 class VarDef : public Statement<VarDef> {
@@ -506,6 +519,7 @@ class VarDef : public Statement<VarDef> {
   TypePtr Type;
   std::string ID;
   ExprPtr Init;
+  VarRefPtr Ref;
 
   friend ASTContext;
 
@@ -514,6 +528,9 @@ public:
   const std::string &name() { return ID; }
   ExprPtr init() { return Init; }
   bool hasInit() { return Init != nullptr; }
+
+  void ref(VarRefPtr R) { Ref = R; }
+  VarRefPtr ref() { return Ref; }
 };
 
 class FuncParam : public ASTNodePtrBase {
@@ -521,12 +538,16 @@ class FuncParam : public ASTNodePtrBase {
 
   TypePtr Ty;
   std::string Name;
+  VarRefPtr Ref;
 
   friend ASTContext;
 
 public:
   TypePtr ty() { return Ty; }
   const std::string &name() { return Name; }
+
+  void ref(VarRefPtr R) { Ref = R; }
+  VarRefPtr ref() { return Ref; }
 
   void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };

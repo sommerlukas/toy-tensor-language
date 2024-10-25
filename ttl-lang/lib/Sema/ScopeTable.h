@@ -20,12 +20,18 @@ private:
     bool add(ast::FuncParam *Param) {
       auto [It, Success] = Content.try_emplace(
           Param->name(), Param->context()->create<ast::VarRef>(Param));
+      if (Success) {
+        Param->ref(Content[Param->name()]);
+      }
       return !Success;
     }
 
     bool add(ast::VarDef *Def) {
       auto [It, Success] = Content.try_emplace(
           Def->name(), Def->context()->create<ast::VarRef>(Def));
+      if (Success) {
+        Def->ref(Content[Def->name()]);
+      }
       return !Success;
     }
 
