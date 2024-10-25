@@ -1,9 +1,12 @@
 #pragma once
 
+#include "ASTVisitor.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 #include <cassert>
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <variant>
@@ -12,20 +15,46 @@
 namespace ttl::ast {
 class ASTContext;
 
-class ASTNodeBase {
+class ASTNodePtrBase {
   size_t ID = 0;
 
+  ASTContext *Ctx;
+
   void id(size_t I) { ID = I; }
+
+  void ctx(ASTContext *C) { Ctx = C; }
 
   friend ASTContext;
 
 public:
   size_t id() { return ID; }
+
+  ASTContext *context() { return Ctx; }
+
+  virtual ~ASTNodePtrBase() = default;
 };
 
-template <class N> concept ASTNode = std::is_base_of<ASTNodeBase, N>::value;
+template <class N>
+concept ASTNode = std::is_base_of<ASTNodePtrBase, N>::value;
 
-struct Type {
+class Type {
+protected:
+  Type(size_t ID) : ID{ID} {}
+
+  virtual std::ostream &dump(std::ostream &) const = 0;
+
+private:
+  ASTContext *Ctx;
+
+  void ctx(ASTContext *C) { Ctx = C; }
+
+  friend ASTContext;
+
+public:
+  ASTContext *context() { return Ctx; }
+
+  virtual ~Type() = default;
+
   size_t ID;
 
   bool isIntTy() { return ID == 0; }
@@ -33,6 +62,14 @@ struct Type {
   bool isVoidTy() { return ID == 2; }
   bool isRangeTy() { return ID == 3; }
   bool isMatrixTy() { return ID > 3; }
+
+  friend bool operator==(const Type &L, const Type &R) { return L.ID == R.ID; }
+  friend bool operator!=(const Type &L, const Type &R) { return L.ID != R.ID; }
+
+  friend std::ostream &operator<<(std::ostream &os, const Type &Ty) {
+    Ty.dump(os);
+    return os;
+  }
 };
 
 using TypePtr = Type *;
@@ -41,24 +78,48 @@ class IntType : public Type {
   IntType() : Type{0} {}
 
   friend ASTContext;
+
+public:
+  std::ostream &dump(std::ostream &os) const override {
+    os << "int";
+    return os;
+  }
 };
 
 class FloatType : public Type {
   FloatType() : Type{1} {}
 
   friend ASTContext;
+
+public:
+  std::ostream &dump(std::ostream &os) const override {
+    os << "float";
+    return os;
+  }
 };
 
 class VoidType : public Type {
   VoidType() : Type{2} {}
 
   friend ASTContext;
+
+public:
+  std::ostream &dump(std::ostream &os) const override {
+    os << "void";
+    return os;
+  }
 };
 
 class RangeType : public Type {
   RangeType() : Type{3} {}
 
   friend ASTContext;
+
+public:
+  std::ostream &dump(std::ostream &os) const override {
+    os << "range";
+    return os;
+  }
 };
 
 class MatrixSize {
@@ -68,8 +129,21 @@ public:
     assert(Size > 0 && "Invalid static size");
   }
 
-  bool isDynamic() { return Size == 0; }
-  bool isStatic() { return Size > 0; }
+  bool isDynamic() const { return Size == 0; }
+  bool isStatic() const { return Size > 0; }
+  size_t val() const {
+    assert(isStatic());
+    return Size;
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const MatrixSize &S) {
+    if (S.isDynamic()) {
+      os << "?";
+    } else {
+      os << S.Size;
+    }
+    return os;
+  }
 
 private:
   size_t Size;
@@ -89,21 +163,56 @@ class MatrixType : public Type {
 
   friend ASTContext;
 
+  static std::string text(TypePtr Elem, llvm::ArrayRef<MatrixSize> S) {
+    std::stringstream Text;
+    Text << "matrix<";
+    Text << Elem;
+    for (auto &MS : S) {
+      Text << "x" << MS;
+    }
+    Text << ">";
+    return Text.str();
+  }
+
 public:
-  TypePtr elem() { return ElemTy; }
-  size_t rank() { return Rank; }
+  TypePtr elem() const { return ElemTy; }
+  size_t rank() const { return Rank; }
 
   MatrixSize size(size_t Dim) {
     assert(Dim < Rank && "Out of bounds");
     return Sizes[Dim];
   }
+
+  llvm::ArrayRef<MatrixSize> sizes() { return Sizes; }
+
+  std::ostream &dump(std::ostream &os) const override {
+    os << text(elem(), Sizes);
+    return os;
+  }
 };
 
-class Expr : public ASTNodeBase {};
+class ExprBase : public ASTNodePtrBase {
+  TypePtr Ty = nullptr;
 
-using ExprPtr = Expr *;
+public:
+  virtual ~ExprBase() = default;
+  void ty(TypePtr SetTy) { Ty = SetTy; }
+  TypePtr ty() { return Ty; }
+  virtual void accept(ASTVisitor *visitor) = 0;
+};
 
-class IntLiteral : public Expr {
+template <typename Derived> class Expr : public ExprBase {
+public:
+  virtual ~Expr() = default;
+
+  void accept(ASTVisitor *visitor) override {
+    visitor->visit(static_cast<Derived *>(this));
+  }
+};
+
+using ExprPtr = ExprBase *;
+
+class IntLiteral : public Expr<IntLiteral> {
   IntLiteral(int Value) : Value{Value} {}
 
   int Value;
@@ -114,7 +223,7 @@ public:
   int value() { return Value; }
 };
 
-class FloatLiteral : public Expr {
+class FloatLiteral : public Expr<FloatLiteral> {
   FloatLiteral(float Value) : Value{Value} {}
 
   float Value;
@@ -128,7 +237,7 @@ public:
 class VarRef;
 using VarRefPtr = VarRef *;
 
-class IDRef : public Expr {
+class IDRef : public Expr<IDRef> {
   IDRef(const std::string &Name) : Name{Name} {}
 
   std::string Name;
@@ -147,7 +256,7 @@ public:
   bool resolved() { return Ref != nullptr; }
 };
 
-class CallExpr : public Expr {
+class CallExpr : public Expr<CallExpr> {
 
   CallExpr(const std::string &FName, llvm::ArrayRef<ExprPtr> Params)
       : FName{FName}, Params{Params} {}
@@ -163,7 +272,7 @@ public:
   llvm::ArrayRef<ExprPtr> params() { return Params; }
 };
 
-class RangeExpr : public Expr {
+class RangeExpr : public Expr<RangeExpr> {
 
   RangeExpr(ExprPtr Start, ExprPtr End) : Start{Start}, End{End} {}
 
@@ -179,7 +288,7 @@ public:
   ExprPtr end() { return End; }
 };
 
-class MatrixInit : public Expr {
+class MatrixInit : public Expr<MatrixInit> {
 
   MatrixInit(llvm::ArrayRef<ExprPtr> Elems) : Elems{Elems} {}
 
@@ -195,7 +304,7 @@ public:
 
 enum BinOp { OR, AND, GT, LT, LE, GE, EQ, NE, ADD, SUB, MUL, DIV, MATMUL, DIM };
 
-class BinExpr : public Expr {
+class BinExpr : public Expr<BinExpr> {
 
   BinExpr(BinOp Op, ExprPtr Left, ExprPtr Right)
       : Op{Op}, Left{Left}, Right{Right} {}
@@ -218,7 +327,7 @@ public:
 
 enum UnOp { NOT, MINUS };
 
-class UnExpr : public Expr {
+class UnExpr : public Expr<UnExpr> {
 
   UnExpr(UnOp Op, ExprPtr Operand) : Op{Op}, Operand{Operand} {}
 
@@ -234,7 +343,7 @@ public:
   ExprPtr operand() { return Operand; }
 };
 
-class SliceExpr : public Expr {
+class SliceExpr : public Expr<SliceExpr> {
   SliceExpr(ExprPtr Matrix, llvm::ArrayRef<ExprPtr> Slices)
       : Matrix{Matrix}, Slices{Slices} {}
 
@@ -250,11 +359,37 @@ public:
   llvm::ArrayRef<ExprPtr> slices() { return Slices; }
 };
 
-class Statement : public ASTNodeBase {};
+class ImplicitCast : public Expr<ImplicitCast> {
+  ImplicitCast(ExprPtr Op, TypePtr TargetTy) : Op{Op}, TargetTy{TargetTy} {}
 
-using StmtPtr = Statement *;
+  ExprPtr Op;
+  TypePtr TargetTy;
 
-class CompoundStmt : public Statement {
+  friend ASTContext;
+
+public:
+  ExprPtr op() { return Op; }
+  TypePtr target() { return TargetTy; }
+};
+
+class StatementBase : public ASTNodePtrBase {
+public:
+  virtual ~StatementBase() = default;
+  virtual void accept(ASTVisitor *visitor) = 0;
+};
+
+template <typename Derived> class Statement : public StatementBase {
+public:
+  virtual ~Statement() = default;
+
+  void accept(ASTVisitor *visitor) override {
+    visitor->visit(static_cast<Derived *>(this));
+  }
+};
+
+using StmtPtr = StatementBase *;
+
+class CompoundStmt : public Statement<CompoundStmt> {
   CompoundStmt(llvm::ArrayRef<StmtPtr> Statements) : Statements{Statements} {}
 
   llvm::SmallVector<StmtPtr> Statements;
@@ -265,7 +400,7 @@ public:
   llvm::ArrayRef<StmtPtr> statements() { return Statements; }
 };
 
-class ReturnStmt : public Statement {
+class ReturnStmt : public Statement<ReturnStmt> {
   ReturnStmt(ExprPtr RetVal) : RetVal{RetVal} {}
 
   ExprPtr RetVal;
@@ -276,7 +411,7 @@ public:
   ExprPtr retVal() { return RetVal; }
 };
 
-class IfStmt : public Statement {
+class IfStmt : public Statement<IfStmt> {
   IfStmt(ExprPtr Cond, StmtPtr Then, StmtPtr Else)
       : Cond{Cond}, Then{Then}, Else{Else} {}
 
@@ -295,7 +430,7 @@ public:
   bool hasElse() { return Else != nullptr; }
 };
 
-class ForLoop : public Statement {
+class ForLoop : public Statement<ForLoop> {
   ForLoop(const std::string &Name, ExprPtr IdxRange, ExprPtr Step, StmtPtr Body)
       : Name{Name}, IdxRange{IdxRange}, Step{Step}, Body{Body} {}
 
@@ -309,12 +444,11 @@ class ForLoop : public Statement {
 public:
   const std::string &name() { return Name; }
   ExprPtr range() { return IdxRange; }
-  ExprPtr step() { return Step; } 
+  ExprPtr step() { return Step; }
   StmtPtr body() { return Body; }
-
 };
 
-class CallStmt : public Statement {
+class CallStmt : public Statement<CallStmt> {
   CallStmt(ExprPtr CallExpr) : CallExpr{CallExpr} {}
 
   ExprPtr CallExpr;
@@ -325,7 +459,7 @@ public:
   ExprPtr call() { return CallExpr; }
 };
 
-class ScalarAssign : public Statement {
+class ScalarAssign : public Statement<ScalarAssign> {
   ScalarAssign(const std::string &ID, ExprPtr Value) : ID{ID}, Value{Value} {}
 
   std::string ID;
@@ -343,7 +477,7 @@ public:
   bool resolved() { return Ref != nullptr; }
 };
 
-class MatrixAssign : public Statement {
+class MatrixAssign : public Statement<MatrixAssign> {
   MatrixAssign(const std::string &ID, llvm::ArrayRef<ExprPtr> Index,
                ExprPtr Value)
       : ID{ID}, Index{Index}, Value{Value} {}
@@ -365,7 +499,7 @@ public:
   llvm::ArrayRef<ExprPtr> indices() { return Index; }
 };
 
-class VarDef : public Statement {
+class VarDef : public Statement<VarDef> {
   VarDef(TypePtr Type, const std::string &ID, ExprPtr Init)
       : Type{Type}, ID{ID}, Init{Init} {}
 
@@ -376,13 +510,13 @@ class VarDef : public Statement {
   friend ASTContext;
 
 public:
-  TypePtr typ() { return Type; }
+  TypePtr ty() { return Type; }
   const std::string &name() { return ID; }
   ExprPtr init() { return Init; }
   bool hasInit() { return Init != nullptr; }
 };
 
-class FuncParam : public ASTNodeBase {
+class FuncParam : public ASTNodePtrBase {
   FuncParam(TypePtr Ty, const std::string &Name) : Ty{Ty}, Name{Name} {}
 
   TypePtr Ty;
@@ -393,11 +527,13 @@ class FuncParam : public ASTNodeBase {
 public:
   TypePtr ty() { return Ty; }
   const std::string &name() { return Name; }
+
+  void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };
 
 using FuncParamPtr = FuncParam *;
 
-class Function : public ASTNodeBase {
+class Function : public ASTNodePtrBase {
 
   Function(TypePtr RetTy, const std::string &FuncName,
            llvm::ArrayRef<FuncParamPtr> Params, llvm::ArrayRef<StmtPtr> Body)
@@ -415,9 +551,11 @@ public:
   const std::string &name() { return FuncName; }
   llvm::ArrayRef<FuncParamPtr> params() { return Params; }
   llvm::ArrayRef<StmtPtr> body() { return Body; }
+
+  void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };
 
-class Module : public ASTNodeBase {
+class Module : public ASTNodePtrBase {
   Module(llvm::ArrayRef<Function *> Funcs) : Funcs{Funcs} {}
 
   llvm::SmallVector<Function *> Funcs;
@@ -426,9 +564,11 @@ class Module : public ASTNodeBase {
 
 public:
   llvm::ArrayRef<Function *> funcs() { return Funcs; }
+
+  void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };
 
-class VarRef : public ASTNodeBase {
+class VarRef : public ASTNodePtrBase {
   VarRef(VarDef *Var) : Value{Var} {}
   VarRef(FuncParam *Param) : Value{Param} {}
 
@@ -450,10 +590,17 @@ public:
     return std::get<FuncParam *>(Value);
   }
 
-  ASTNodeBase *get() {
+  ASTNodePtrBase *get() {
     if (isParam())
       return std::get<FuncParam *>(Value);
     return std::get<VarDef *>(Value);
+  }
+
+  TypePtr ty() {
+    if (isParam()) {
+      return std::get<FuncParam *>(Value)->ty();
+    }
+    return std::get<VarDef *>(Value)->ty();
   }
 
   bool resolved() {
@@ -462,6 +609,8 @@ public:
 
     return std::get<VarDef *>(Value) != nullptr;
   }
+
+  void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };
 
 } // namespace ttl::ast
