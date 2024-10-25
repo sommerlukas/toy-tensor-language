@@ -1,8 +1,9 @@
+#include "ASTBuilder.h"
+#include "ASTContext.h"
 #include "TTLANTLRParser.h"
 #include "TTLParserContext.h"
 #include "llvm/Support/CommandLine.h"
-#include "ASTContext.h"
-#include "ASTBuilder.h"
+#include "Sema.h"
 
 using namespace llvm;
 using namespace ttl::parser;
@@ -27,10 +28,12 @@ int main(int argc, char **argv) {
 
   TTLParser::ModuleContext *ParsedModule =
       ExitOnErr(Parser.parseSourceModule(InputFilename.c_str()));
-  
+
   ASTContext ASTCtx;
 
   ASTBuilder Builder(&ASTCtx);
-  ParsedModule->accept(&Builder);
+  auto *ASTModule =
+      std::any_cast<ttl::ast::Module *>(ParsedModule->accept(&Builder));
 
- }
+  ttl::sema::Sema::run(ASTModule);
+}
