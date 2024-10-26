@@ -21,6 +21,11 @@ private:
   mlir::Location translateLoc(ast::ASTNodePtrBase *Node) {
     return Builder.getUnknownLoc();
   }
+  mlir::Value createIntConstant(::ttl::ast::ASTNodePtrBase *Node,
+                                int32_t Value);
+
+  mlir::Value createFloatConstant(::ttl::ast::ASTNodePtrBase *Node,
+                                  float Value);
 
 public:
   CodeGenVisitor(mlir::MLIRContext *Ctx, mlir::OpBuilder Builder,

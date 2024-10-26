@@ -6,6 +6,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/Debug.h"
 
 using namespace mlir;
 using namespace mlir::ttl;
@@ -59,7 +60,7 @@ void CodeGenVisitor::visit(ast::Function *Node) {
       FunctionType::get(Ctx, ParamTys, translateType(Node->returnType(), Ctx));
   auto FuncOp =
       Builder.create<func::FuncOp>(translateLoc(Node), Node->name(), FuncTy);
-  Block* FuncBody = Builder.createBlock(&FuncOp.getFunctionBody());
+  Block *FuncBody = Builder.createBlock(&FuncOp.getFunctionBody());
   for (auto PT : llvm::zip_equal(Node->params(), ParamTys)) {
     FuncParam *Param = std::get<0>(PT);
     mlir::Type Ty = std::get<1>(PT);
@@ -67,7 +68,7 @@ void CodeGenVisitor::visit(ast::Function *Node) {
     assert(Ref);
     LastDefs[Ref] = FuncBody->addArgument(Ty, translateLoc(Param));
   }
-  
+
   Builder.setInsertionPointToStart(FuncBody);
   for (StmtPtr S : Node->body()) {
     S->accept(this);
@@ -77,11 +78,40 @@ void CodeGenVisitor::visit(ast::Function *Node) {
   }
 }
 
+mlir::Value CodeGenVisitor::createIntConstant(::ttl::ast::ASTNodePtrBase *Node,
+                                              int32_t Value) {
+  return Builder.create<mlir::ttl::IntConstant>(translateLoc(Node), Value);
+}
+
+mlir::Value
+CodeGenVisitor::createFloatConstant(::ttl::ast::ASTNodePtrBase *Node,
+                                    float Value) {
+  return Builder.create<mlir::ttl::FloatConstant>(
+      translateLoc(Node), mlir::FloatAttr::get(Float32Type::get(Ctx), Value));
+}
+
 void CodeGenVisitor::visit(ast::VarDef *Node) {
+  mlir::Type ResulTy = translateType(Node->ty(), Ctx);
   if (!Node->hasInit()) {
+    // Variables without explicit initializer are zero-initialized.
+    Value Init;
+    if (Node->ty()->isIntTy()) {
+      Init = createIntConstant(Node, 0);
+    }
+    if (Node->ty()->isFloatTy()) {
+      Init = createFloatConstant(Node, 0.0f);
+    }
+    if (Node->ty()->isMatrixTy()) {
+      auto MatrixTy = static_cast<MatrixType *>(Node->ty());
+      Value ScalarInit = (MatrixTy->elem()->isFloatTy())
+                             ? createFloatConstant(Node, 0.0f)
+                             : createIntConstant(Node, 0);
+      Init = Builder.create<TensorScalarInit>(translateLoc(Node), ResulTy,
+                                              ScalarInit);
+    }
+    LastDefs[Node->ref()] = Init;
     return;
   }
-  mlir::Type ResulTy = translateType(Node->ty(), Ctx);
   ExprPtr InitExpr = Node->init();
   InitExpr->accept(this);
   Value Init = ValueMap.at(InitExpr);
@@ -177,6 +207,11 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   Value Step = ValueMap[Node->step()];
   auto ForOp =
       Builder.create<scf::ForOp>(translateLoc(Node), Start, End, Step, InArgs);
+  LastDefs[Node->ref()] = ForOp.getInductionVar();
+  size_t ArgIdx = 1;
+  for (auto A : AssignList) {
+    LastDefs[A] = ForOp.getBody()->getArgument(ArgIdx++);
+  }
   Builder.setInsertionPointToStart(ForOp.getBody());
   Node->body()->accept(this);
   llvm::SmallVector<mlir::Value> NewDefs;
@@ -206,7 +241,8 @@ void CodeGenVisitor::visit(ast::IfStmt *Node) {
   Value Cond = ValueMap[Node->cond()];
   auto IfOp =
       Builder.create<mlir::ttl::If>(translateLoc(Node), AssignTypes, Cond);
-  Builder.setInsertionPointToStart(&IfOp.getThenRegion().front());
+  auto *ThenBlock = Builder.createBlock(&IfOp.getThenRegion());
+  Builder.setInsertionPointToStart(ThenBlock);
   Node->then()->accept(this);
   llvm::SmallVector<Value> ThenDefs;
   for (auto A : AssignList) {
@@ -228,8 +264,8 @@ void CodeGenVisitor::visit(ast::IfStmt *Node) {
     }
     Builder.create<mlir::ttl::Yield>(translateLoc(Node), ElseDefs);
   }
-  // Outside the 'if', the last definition for values written inside the 'if' is
-  // the values returned by the 'If'.
+  // Outside the 'if', the last definition for values written inside the 'if'
+  // is the values returned by the 'If'.
   for (auto AV : llvm::zip(AssignList, IfOp.getResults())) {
     LastDefs[std::get<0>(AV)] = std::get<1>(AV);
   }
@@ -370,7 +406,7 @@ void CodeGenVisitor::visit(ast::IDRef *Node) {
 void CodeGenVisitor::visit(ast::FloatLiteral *Node) {
   Value Result = Builder.create<mlir::ttl::FloatConstant>(
       translateLoc(Node),
-      mlir::FloatAttr::get(translateType(Node->ty(), Ctx), Node->value()));
+      mlir::FloatAttr::get(Float32Type::get(Ctx), Node->value()));
   ValueMap[Node] = Result;
 }
 

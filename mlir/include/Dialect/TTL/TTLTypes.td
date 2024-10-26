@@ -40,7 +40,7 @@ def TTLTensorType : TTLType<"Tensor", "tensor"> {
     }]>
   ];
 
-  let assemblyFormat = "`tensor` `<` custom<TTLShape>($shape) `x` $elementType `>`";
+  let assemblyFormat = "`<` custom<TTLShape>($shape) `x` $elementType `>`";
 }
 
 def TTLScalarType : AnyTypeOf<[TTLIntType, TTLFloatType]> {}
