@@ -1,5 +1,6 @@
 #include "SemaVisitor.h"
 #include <iostream>
+#include <numeric>
 
 using namespace ttl::sema;
 using namespace ttl::ast;
@@ -90,6 +91,10 @@ void SemaVisitor::visit(Module *Node) {
 }
 
 void SemaVisitor::visit(Function *Node) {
+  if (FuncDecls.contains(Node->name())) {
+    reportError(Node, "Cannot redefine function with name", Node->name());
+  }
+  FuncDecls[Node->name()] = Node;
   if (Node->returnType()->isRangeTy()) {
     reportError(Node, "Cannot return range from function");
   }
@@ -121,7 +126,40 @@ void SemaVisitor::visit(VarDef *Node) {
   }
   if (Node->hasInit()) {
     Node->init()->accept(this);
-    // TODO: Handle case of matrix init
+    // To allow matrix-init, we allow to match a 1-dimensional matrix of N
+    // elements to a multi-dimensional assignee with all-static sizes, where the
+    // sizes must accumulate to N.
+    if (Node->ty()->isMatrixTy() && Node->init()->ty()->isMatrixTy()) {
+      auto InitTy = static_cast<MatrixType *>(Node->init()->ty());
+      if (InitTy->sizes().size() == 1 && InitTy->size(0).isStatic()) {
+        auto NodeTy = static_cast<MatrixType *>(Node->ty());
+        MatrixSize NumElements = std::reduce(
+            NodeTy->sizes().begin(), NodeTy->sizes().end(), MatrixSize(1),
+            [](const MatrixSize &L, const MatrixSize &R) {
+              if (L.isStatic() && R.isStatic()) {
+                return MatrixSize(L.val() * R.val());
+              }
+              return MatrixSize();
+            });
+        if (NumElements.isStatic() &&
+            NumElements.val() == InitTy->size(0).val()) {
+          Node->init()->ty(NodeTy);
+          return;
+        }
+      }
+    }
+    if (Node->ty()->isMatrixTy()) {
+      auto NodeTy = static_cast<MatrixType *>(Node->ty());
+      // Allow broadcast of a single element of a matrix' element type.
+      if (*NodeTy->elem() == *Node->init()->ty()) {
+        return;
+      }
+      // Allow range initialization of a matrix.
+      if (NodeTy->elem()->isIntTy() && Node->init()->ty()->isRangeTy()) {
+        return;
+      }
+    }
+
     checkTypeMatch(Node, Node->ty(), Node->init()->ty());
   }
 }
@@ -177,6 +215,7 @@ void SemaVisitor::visit(ForLoop *Node) {
   if (!ItVar->ty()->isIntTy()) {
     reportError(Node, "Loop induction variable must be of type integer");
   }
+  Node->ref(ItVar);
   Node->range()->accept(this);
   checkTypeConstraint<IntType, RangeType>(Node->range());
   Node->step()->accept(this);
@@ -227,7 +266,7 @@ void SemaVisitor::visit(SliceExpr *Node) {
     checkTypeConstraint<IntType, RangeType>(Slice);
     AllInteger &= Slice->ty()->isIntTy();
     // TODO: We could do better here if we can detect constant ranges.
-    if (AllInteger) {
+    if (Slice->ty()->isIntTy()) {
       SliceSize.push_back(MatrixSize(1));
     } else {
       SliceSize.push_back(MatrixSize());
@@ -272,6 +311,30 @@ void checkCompare(BinExpr *Node) {
   checkTypeMatch(Node, Node->left()->ty(), Node->right()->ty());
 }
 
+TypePtr checkMatmul(BinExpr *Node) {
+  checkTypeConstraint<MatrixType>(Node->left());
+  checkTypeConstraint<MatrixType>(Node->right());
+  auto LeftTy = static_cast<MatrixType *>(Node->left()->ty());
+  auto RightTy = static_cast<MatrixType *>(Node->right()->ty());
+  if (LeftTy->rank() != RightTy->rank()) {
+    reportError(Node, "Dimension mismatch");
+  }
+  if (LeftTy->rank() != 2) {
+    reportError(Node, "Matrix multiplication currently only supported for "
+                      "2-dimensional matrices");
+  }
+  MatrixSize N = LeftTy->size(0);
+  MatrixSize KL = LeftTy->size(1);
+  MatrixSize KR = RightTy->size(0);
+  MatrixSize M = RightTy->size(1);
+  if (KL.isStatic() && KR.isStatic() && KL.val() != KR.val()) {
+    reportError(Node,
+                "K must be equal for both operands of matrix multiplication");
+  }
+  llvm::SmallVector<MatrixSize> NewSizes({N, M});
+  return Node->context()->getMatrixTy(LeftTy->elem(), NewSizes);
+}
+
 TypePtr checkArithmetic(BinExpr *Node) {
   checkTypeConstraint<IntType, FloatType, MatrixType>(Node->left());
   checkTypeConstraint<IntType, FloatType, MatrixType>(Node->right());
@@ -280,7 +343,6 @@ TypePtr checkArithmetic(BinExpr *Node) {
   // Binary operation with two matrices.
   if (LeftTy->isMatrixTy() && RightTy->isMatrixTy()) {
     checkTypeMatch(Node, LeftTy, RightTy);
-    // TODO: Implement support for matrix multiplication
     return unifyMatrixTypes(LeftTy, RightTy);
   }
   // Binary operation with matrix on the left and scalar right.
@@ -317,6 +379,9 @@ void SemaVisitor::visit(BinExpr *Node) {
   case BinOp::DIM:
     checkTypeConstraint<MatrixType>(Node->left());
     checkTypeConstraint<IntType>(Node->right());
+    break;
+  case BinOp::MATMUL:
+    ResultTy = checkMatmul(Node);
     break;
   default:
     ResultTy = checkArithmetic(Node);

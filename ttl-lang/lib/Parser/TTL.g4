@@ -19,7 +19,7 @@ statement:      varDef
                 | compoundStmt
                 ;
 
-varDef:         'var' type ID ('=' expr ';')? ;
+varDef:         'var' type ID ('=' expr )? ';' ;
 varAssign:      lhsID '=' expr ';' ;
 lhsID:          ID '[' expr (',' expr)* ']'                                       # MatrixElemAssign
                 | ID                                                              # PrimAssign

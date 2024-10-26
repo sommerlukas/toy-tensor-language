@@ -36,7 +36,7 @@ private:
     }
 
     ast::VarRefPtr get(llvm::StringRef Name) {
-      if (Content.hash(Name)) {
+      if (Content.contains(Name)) {
         return Content.at(Name);
       }
 

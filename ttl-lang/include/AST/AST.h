@@ -166,7 +166,7 @@ class MatrixType : public Type {
   static std::string text(TypePtr Elem, llvm::ArrayRef<MatrixSize> S) {
     std::stringstream Text;
     Text << "matrix<";
-    Text << Elem;
+    Text << *Elem;
     for (auto &MS : S) {
       Text << "x" << MS;
     }
@@ -448,11 +448,14 @@ class ForLoop : public Statement<ForLoop> {
   ExprPtr IdxRange;
   ExprPtr Step;
   StmtPtr Body;
+  VarRefPtr IndVarRef;
 
   friend ASTContext;
 
 public:
   const std::string &name() { return Name; }
+  void ref(VarRefPtr Ref) { IndVarRef = Ref; }
+  VarRefPtr ref() { return IndVarRef; }
   ExprPtr range() { return IdxRange; }
   ExprPtr step() { return Step; }
   StmtPtr body() { return Body; }

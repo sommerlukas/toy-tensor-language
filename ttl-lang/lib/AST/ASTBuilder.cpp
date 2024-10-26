@@ -192,8 +192,7 @@ std::any ASTBuilder::visitIdRef(TTLParser::IdRefContext *ctx) {
 }
 
 std::any ASTBuilder::visitDimension(TTLParser::DimensionContext *ctx) {
-  std::string Name = ctx->getText();
-  return createExpr<IDRef>(Name);
+  return createBinaryOp(ctx, BinOp::DIM);
 }
 
 std::any ASTBuilder::visitRange(TTLParser::RangeContext *ctx) {
@@ -220,10 +219,10 @@ std::any ASTBuilder::visitCompare(TTLParser::CompareContext *ctx) {
   } else if (Operation == "<=") {
     Opcode = BinOp::LE;
   } else if (Operation == ">=") {
-    Opcode = BinOp::GT;
+    Opcode = BinOp::GE;
   } else if (Operation == "==") {
     Opcode = BinOp::EQ;
-  } else if (Operation == "==") {
+  } else if (Operation == "!=") {
     Opcode = BinOp::NE;
   }
   return createBinaryOp(ctx, Opcode);
