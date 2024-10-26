@@ -23,6 +23,10 @@ cl::opt<std::string> OutputFilename("o", cl::desc("Specify output filename"),
 cl::opt<std::string> InputFilename(cl::Positional, cl::desc("<input file>"),
                                    cl::Required);
 
+cl::opt<bool> PrintDebugInfo("print-debug-info",
+                             cl::desc{
+                                 "Include debug information in the output"});
+
 int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv);
 
@@ -51,5 +55,23 @@ int main(int argc, char **argv) {
 
   mlir::ModuleOp MLIRModule =
       ttl::codegen::CodeGen::generate(ASTModule, &MLIRCtx);
-  MLIRModule.dump();
+
+  mlir::OpPrintingFlags PrintFlags;
+  if (PrintDebugInfo) {
+    PrintFlags.enableDebugInfo();
+  }
+
+  if (OutputFilename.getNumOccurrences() == 0) {
+    MLIRModule.print(llvm::outs(), PrintFlags);
+    return 0;
+  }
+
+  std::error_code EC;
+  auto OutStream = llvm::raw_fd_ostream{OutputFilename.c_str(), EC};
+  if (EC) {
+    llvm::errs() << "Failed to open output stream for writing\n";
+    return -1;
+  }
+
+  MLIRModule.print(OutStream, PrintFlags);
 }
