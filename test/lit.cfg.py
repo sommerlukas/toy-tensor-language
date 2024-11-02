@@ -55,6 +55,7 @@ tool_dirs = [config.ttl_tools_dir, config.llvm_tools_dir]
 tools = [
     "mlir-opt",
     "ttl-cc",
+    "ttl-opt",
 ]
 
 llvm_config.add_tool_substitutions(tools, tool_dirs)
