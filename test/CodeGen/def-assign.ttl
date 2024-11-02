@@ -20,13 +20,13 @@ function float float_zero_init(){
   return b;
 }
 
-function matrix<int>[?, ?] matrix_zero_init(){
-  var matrix<int>[?, ?] a;
+function matrix<int>[2, 2] matrix_zero_init(){
+  var matrix<int>[2, 2] a;
   return a;
 }
 
-function matrix<float>[?, ?] matrix_scalar_init(){
-  var matrix<float>[?, ?] a = 42.0;
+function matrix<float>[3, 4] matrix_scalar_init(){
+  var matrix<float>[3, 4] a = 42.0;
   return a;
 }
 
@@ -79,24 +79,22 @@ function matrix<float>[2,2] dyn_matrix_elem_assign(float a, int b, int c){
 // CHECK:           "ttl.return"(%[[VAL_0]]) : (!ttl.float) -> ()
 // CHECK:         }
 
-// CHECK-LABEL:   func.func @matrix_zero_init() -> !ttl.tensor<?x? x !ttl.int> {
-// CHECK:           %[[VAL_0:.*]] = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_1:.*]] = "ttl.tensor_scalar_init"(%[[VAL_0]]) : (!ttl.int) -> !ttl.tensor<?x? x !ttl.int>
-// CHECK:           "ttl.return"(%[[VAL_1]]) : (!ttl.tensor<?x? x !ttl.int>) -> ()
+// CHECK-LABEL:   func.func @matrix_zero_init() -> !ttl.tensor<2x2x!ttl.int> {
+// CHECK:           %[[VAL_0:.*]] = "ttl.tensor_random_init"() : () -> !ttl.tensor<2x2x!ttl.int>
+// CHECK:           "ttl.return"(%[[VAL_0]]) : (!ttl.tensor<2x2x!ttl.int>) -> ()
 // CHECK:         }
 
-// CHECK-LABEL:   func.func @matrix_scalar_init() -> !ttl.tensor<?x? x !ttl.float> {
+// CHECK-LABEL:   func.func @matrix_scalar_init() -> !ttl.tensor<3x4x!ttl.float> {
 // CHECK:           %[[VAL_0:.*]] = "ttl.const_float"() <{constVal = 4.200000e+01 : f32}> : () -> !ttl.float
-// CHECK:           %[[VAL_1:.*]] = "ttl.tensor_scalar_init"(%[[VAL_0]]) : (!ttl.float) -> !ttl.tensor<?x? x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_1]]) : (!ttl.tensor<?x? x !ttl.float>) -> ()
+// CHECK:           %[[VAL_1:.*]] = "ttl.tensor_scalar_init"(%[[VAL_0]]) : (!ttl.float) -> !ttl.tensor<3x4x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_1]]) : (!ttl.tensor<3x4x!ttl.float>) -> ()
 // CHECK:         }
 
-// CHECK-LABEL:   func.func @matrix_range_init() -> !ttl.tensor<4x4 x !ttl.int> {
+// CHECK-LABEL:   func.func @matrix_range_init() -> !ttl.tensor<4x4x!ttl.int> {
 // CHECK:           %[[VAL_0:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
 // CHECK:           %[[VAL_1:.*]] = "ttl.const_int"() <{constVal = 17 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_2:.*]] = ttl.range %[[VAL_0]] : %[[VAL_1]]
-// CHECK:           %[[VAL_3:.*]] = "ttl.tensor_range_init"(%[[VAL_2]]) : (!ttl.range) -> !ttl.tensor<4x4 x !ttl.int>
-// CHECK:           "ttl.return"(%[[VAL_3]]) : (!ttl.tensor<4x4 x !ttl.int>) -> ()
+// CHECK:           %[[VAL_2:.*]] = "ttl.tensor_range_init"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.tensor<4x4x!ttl.int>
+// CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.tensor<4x4x!ttl.int>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @scalar_param_assign(
@@ -112,22 +110,22 @@ function matrix<float>[2,2] dyn_matrix_elem_assign(float a, int b, int c){
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @fixed_matrix_elem_assign(
-// CHECK-SAME:                                        %[[VAL_0:.*]]: !ttl.float) -> !ttl.tensor<2x2 x !ttl.float> {
+// CHECK-SAME:                                        %[[VAL_0:.*]]: !ttl.float) -> !ttl.tensor<2x2x!ttl.float> {
 // CHECK:           %[[VAL_1:.*]] = "ttl.const_float"() <{constVal = 2.500000e+01 : f32}> : () -> !ttl.float
-// CHECK:           %[[VAL_2:.*]] = "ttl.tensor_scalar_init"(%[[VAL_1]]) : (!ttl.float) -> !ttl.tensor<2x2 x !ttl.float>
+// CHECK:           %[[VAL_2:.*]] = "ttl.tensor_scalar_init"(%[[VAL_1]]) : (!ttl.float) -> !ttl.tensor<2x2x!ttl.float>
 // CHECK:           %[[VAL_3:.*]] = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
 // CHECK:           %[[VAL_4:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_insert"(%[[VAL_2]], %[[VAL_0]], %[[VAL_3]], %[[VAL_4]]) : (!ttl.tensor<2x2 x !ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2 x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.tensor<2x2 x !ttl.float>) -> ()
+// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_insert"(%[[VAL_2]], %[[VAL_0]], %[[VAL_3]], %[[VAL_4]]) : (!ttl.tensor<2x2x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.tensor<2x2x!ttl.float>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @dyn_matrix_elem_assign(
 // CHECK-SAME:                                      %[[VAL_0:.*]]: !ttl.float,
 // CHECK-SAME:                                      %[[VAL_1:.*]]: !ttl.int,
-// CHECK-SAME:                                      %[[VAL_2:.*]]: !ttl.int) -> !ttl.tensor<2x2 x !ttl.float> {
+// CHECK-SAME:                                      %[[VAL_2:.*]]: !ttl.int) -> !ttl.tensor<2x2x!ttl.float> {
 // CHECK:           %[[VAL_3:.*]] = "ttl.const_float"() <{constVal = 2.500000e+01 : f32}> : () -> !ttl.float
-// CHECK:           %[[VAL_4:.*]] = "ttl.tensor_scalar_init"(%[[VAL_3]]) : (!ttl.float) -> !ttl.tensor<2x2 x !ttl.float>
-// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_insert"(%[[VAL_4]], %[[VAL_0]], %[[VAL_1]], %[[VAL_2]]) : (!ttl.tensor<2x2 x !ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2 x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.tensor<2x2 x !ttl.float>) -> ()
+// CHECK:           %[[VAL_4:.*]] = "ttl.tensor_scalar_init"(%[[VAL_3]]) : (!ttl.float) -> !ttl.tensor<2x2x!ttl.float>
+// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_insert"(%[[VAL_4]], %[[VAL_0]], %[[VAL_1]], %[[VAL_2]]) : (!ttl.tensor<2x2x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.tensor<2x2x!ttl.float>) -> ()
 // CHECK:         }
 

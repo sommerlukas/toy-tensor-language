@@ -47,16 +47,10 @@ def Compare : TTLOp<"cmp"> {
   let results = (outs TTLIntType:$cmpResult);
 }
 
-def Range : TTLOp<"range"> {
-  let summary = "TTL range creation";
+def TensorRandomInit : TTLOp<"tensor_random_init"> {
+  let summary = "TTL initialize tensor with random values";
 
-  let arguments = (ins TTLIntType:$start, TTLIntType:$end);
-
-  let results = (outs TTLRangeType:$range);
-
-  let assemblyFormat = [{
-    $start `:` $end attr-dict
-  }];
+  let results = (outs TTLTensorType:$tensor);
 }
 
 def TensorScalarInit : TTLOp<"tensor_scalar_init"> {
@@ -70,7 +64,7 @@ def TensorScalarInit : TTLOp<"tensor_scalar_init"> {
 def TensorRangeInit : TTLOp<"tensor_range_init"> {
   let summary = "TTL initialize tensor with range";
 
-  let arguments = (ins TTLRangeType:$range);
+  let arguments = (ins TTLIntType:$start, TTLIntType:$end);
 
   let results = (outs TTLTensorType:$tensor);
 }
@@ -100,10 +94,11 @@ def Dim : TTLOp<"dim"> {
   let results = (outs TTLIntType:$dimSize);
 }
 
-def Slice : TTLOp<"slice"> {
+def Slice : TTLOp<"slice", [SameVariadicOperandSize]> {
   let summary = "TTL slice of tensor";
 
-  let arguments = (ins TTLTensorType:$tensor, Variadic<TTLSliceType>:$indices);
+  let arguments = (ins TTLTensorType:$tensor, Variadic<TTLIntType>:$offsets, 
+                        Variadic<TTLIntType>:$sizes);
 
   let results = (outs TTLValueType:$slice);
 }
@@ -120,7 +115,7 @@ def Return : TTLOp<"return", [ReturnLike, Terminator]> {
   let arguments = (ins TTLValueType:$retVal);
 }
 
-def IntConstant : TTLOp<"const_int", [Pure, ConstantLike]> {
+def IntConstant : TTLOp<"const_int", [Pure]> {
   let summary = "TTL constant integer";
 
   let arguments = (ins I32Attr:$constVal);
@@ -128,7 +123,7 @@ def IntConstant : TTLOp<"const_int", [Pure, ConstantLike]> {
   let results = (outs TTLIntType:$val);
 }
 
-def FloatConstant : TTLOp<"const_float", [Pure, ConstantLike]> {
+def FloatConstant : TTLOp<"const_float", [Pure]> {
   let summary = "TTL constant float";
 
   let arguments = (ins F32Attr:$constVal);

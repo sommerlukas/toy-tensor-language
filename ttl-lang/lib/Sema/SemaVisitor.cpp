@@ -150,17 +150,33 @@ void SemaVisitor::visit(VarDef *Node) {
     }
     if (Node->ty()->isMatrixTy()) {
       auto NodeTy = static_cast<MatrixType *>(Node->ty());
-      // Allow broadcast of a single element of a matrix' element type.
-      if (*NodeTy->elem() == *Node->init()->ty()) {
-        return;
-      }
       // Allow range initialization of a matrix.
       if (NodeTy->elem()->isIntTy() && Node->init()->ty()->isRangeTy()) {
+        if (NodeTy->rank() > 1 && NodeTy->isDynamic()) {
+          reportError(Node, "Range-initialization of multi-dimensional "
+                            "matrices requires static shape");
+        }
+        return;
+      }
+      if (!Node->init()->ty()->isMatrixTy() && !NodeTy->isStatic()) {
+        reportError(Node, "Matrix variable definition with scalar or range "
+                          "init requires static shape");
+      }
+      // Allow broadcast of a single element of a matrix' element type.
+      if (*NodeTy->elem() == *Node->init()->ty()) {
         return;
       }
     }
 
     checkTypeMatch(Node, Node->ty(), Node->init()->ty());
+    return;
+  }
+
+  if (Node->ty()->isMatrixTy() &&
+      static_cast<MatrixType *>(Node->ty())->isDynamic()) {
+    reportError(
+        Node,
+        "Matrix variable definition without initializer requires static shape");
   }
 }
 

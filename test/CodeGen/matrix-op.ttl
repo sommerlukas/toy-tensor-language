@@ -44,67 +44,73 @@ function matrix<float>[2,2] matrix_init(float a, float b, float c, float d, floa
   return f;
 }
 
-// NOTE: CHECK lines have been manually edited.
+// NOTE: Assertions have been manually edited after auto-generation. 
 
 // CHECK-LABEL:   func.func @dim(
-// CHECK-SAME:                   %[[VAL_0:.*]]: !ttl.tensor<4x4 x !ttl.float>) -> !ttl.int {
+// CHECK-SAME:                   %[[VAL_0:.*]]: !ttl.tensor<4x4x!ttl.float>) -> !ttl.int {
 // CHECK:           %[[VAL_1:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_2:.*]] = "ttl.dim"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<4x4 x !ttl.float>, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_2:.*]] = "ttl.dim"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int) -> !ttl.int
 // CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.int) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @dim_dyn(
-// CHECK-SAME:                       %[[VAL_0:.*]]: !ttl.tensor<?x?x? x !ttl.int>,
+// CHECK-SAME:                       %[[VAL_0:.*]]: !ttl.tensor<?x?x?x!ttl.int>,
 // CHECK-SAME:                       %[[VAL_1:.*]]: !ttl.int) -> !ttl.int {
-// CHECK:           %[[VAL_2:.*]] = "ttl.dim"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<?x?x? x !ttl.int>, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_2:.*]] = "ttl.dim"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<?x?x?x!ttl.int>, !ttl.int) -> !ttl.int
 // CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.int) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @slice_mixed(
-// CHECK:                           %[[VAL_0:.*]]: !ttl.tensor<?x? x !ttl.int>, %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int,
-// CHECK:                           %[[VAL_3:.*]]: !ttl.int) -> !ttl.tensor<?x1 x !ttl.int> {
-// CHECK:           %[[VAL_4:.*]] = ttl.range %[[VAL_1]] : %[[VAL_2]]
-// CHECK:           %[[VAL_5:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_4]], %[[VAL_3]]) : (!ttl.tensor<?x? x !ttl.int>, !ttl.range, !ttl.int) -> !ttl.tensor<?x1 x !ttl.int>
-// CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.tensor<?x1 x !ttl.int>) -> ()
+// CHECK-SAME:                           %[[VAL_0:.*]]: !ttl.tensor<?x?x!ttl.int>,
+// CHECK-SAME:                           %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int,
+// CHECK-SAME:                           %[[VAL_3:.*]]: !ttl.int) -> !ttl.tensor<?x1x!ttl.int> {
+// CHECK:           %[[VAL_4:.*]] = "ttl.sub"(%[[VAL_2]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_5:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_6:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_3]], %[[VAL_4]], %[[VAL_5]]) : (!ttl.tensor<?x?x!ttl.int>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.tensor<?x1x!ttl.int>
+// CHECK:           "ttl.return"(%[[VAL_6]]) : (!ttl.tensor<?x1x!ttl.int>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @slice_range(
-// CHECK-SAME:                           %[[VAL_0:.*]]: !ttl.tensor<16x16x16 x !ttl.float>,
+// CHECK-SAME:                           %[[VAL_0:.*]]: !ttl.tensor<16x16x16x!ttl.float>,
 // CHECK-SAME:                           %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int, %[[VAL_3:.*]]: !ttl.int, %[[VAL_4:.*]]: !ttl.int, %[[VAL_5:.*]]: !ttl.int,
-// CHECK-SAME:                           %[[VAL_6:.*]]: !ttl.int) -> !ttl.tensor<?x?x? x !ttl.float> {
-// CHECK:           %[[VAL_7:.*]] = ttl.range %[[VAL_1]] : %[[VAL_2]]
-// CHECK:           %[[VAL_8:.*]] = ttl.range %[[VAL_3]] : %[[VAL_4]]
-// CHECK:           %[[VAL_9:.*]] = ttl.range %[[VAL_5]] : %[[VAL_6]]
-// CHECK:           %[[VAL_10:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_7]], %[[VAL_8]], %[[VAL_9]]) : (!ttl.tensor<16x16x16 x !ttl.float>, !ttl.range, !ttl.range, !ttl.range) -> !ttl.tensor<?x?x? x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_10]]) : (!ttl.tensor<?x?x? x !ttl.float>) -> ()
+// CHECK-SAME:                           %[[VAL_6:.*]]: !ttl.int) -> !ttl.tensor<?x?x?x!ttl.float> {
+// CHECK:           %[[VAL_7:.*]] = "ttl.sub"(%[[VAL_2]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_8:.*]] = "ttl.sub"(%[[VAL_4]], %[[VAL_3]]) : (!ttl.int, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_9:.*]] = "ttl.sub"(%[[VAL_6]], %[[VAL_5]]) : (!ttl.int, !ttl.int) -> !ttl.int
+// CHECK:           %[[VAL_10:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_3]], %[[VAL_5]], %[[VAL_7]], %[[VAL_8]], %[[VAL_9]]) : (!ttl.tensor<16x16x16x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.tensor<?x?x?x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_10]]) : (!ttl.tensor<?x?x?x!ttl.float>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @slice_int(
-// CHECK-SAME:                         %[[VAL_0:.*]]: !ttl.tensor<?x?x? x !ttl.float>,
-// CHECK-SAME:                         %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int, %[[VAL_3:.*]]: !ttl.int) -> !ttl.float {
-// CHECK:           %[[VAL_4:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]], %[[VAL_3]]) : (!ttl.tensor<?x?x? x !ttl.float>, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
-// CHECK:           "ttl.return"(%[[VAL_4]]) : (!ttl.float) -> ()
+// CHECK-SAME:                         %[[VAL_0:.*]]: !ttl.tensor<?x?x?x!ttl.float>,
+// CHECK-SAME:                         %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int,
+// CHECK-SAME:                         %[[VAL_3:.*]]: !ttl.int) -> !ttl.float {
+// CHECK:           %[[VAL_4:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_5:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_6:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_7:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]], %[[VAL_3]], %[[VAL_4]], %[[VAL_5]], %[[VAL_6]]) : (!ttl.tensor<?x?x?x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
+// CHECK:           "ttl.return"(%[[VAL_7]]) : (!ttl.float) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @matmul(
-// CHECK-SAME:                      %[[VAL_0:.*]]: !ttl.tensor<4x3 x !ttl.float>,
-// CHECK-SAME:                      %[[VAL_1:.*]]: !ttl.tensor<3x4 x !ttl.float>) -> !ttl.tensor<4x4 x !ttl.float> {
-// CHECK:           %[[VAL_2:.*]] = "ttl.matmul"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<4x3 x !ttl.float>, !ttl.tensor<3x4 x !ttl.float>) -> !ttl.tensor<4x4 x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.tensor<4x4 x !ttl.float>) -> ()
+// CHECK-SAME:                      %[[VAL_0:.*]]: !ttl.tensor<4x3x!ttl.float>,
+// CHECK-SAME:                      %[[VAL_1:.*]]: !ttl.tensor<3x4x!ttl.float>) -> !ttl.tensor<4x4x!ttl.float> {
+// CHECK:           %[[VAL_2:.*]] = "ttl.matmul"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<4x3x!ttl.float>, !ttl.tensor<3x4x!ttl.float>) -> !ttl.tensor<4x4x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.tensor<4x4x!ttl.float>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @matmul_dyn(
-// CHECK-SAME:                          %[[VAL_0:.*]]: !ttl.tensor<?x? x !ttl.float>,
-// CHECK-SAME:                          %[[VAL_1:.*]]: !ttl.tensor<?x? x !ttl.float>) -> !ttl.tensor<?x? x !ttl.float> {
-// CHECK:           %[[VAL_2:.*]] = "ttl.matmul"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<?x? x !ttl.float>, !ttl.tensor<?x? x !ttl.float>) -> !ttl.tensor<?x? x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.tensor<?x? x !ttl.float>) -> ()
+// CHECK-SAME:                          %[[VAL_0:.*]]: !ttl.tensor<?x?x!ttl.float>,
+// CHECK-SAME:                          %[[VAL_1:.*]]: !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float> {
+// CHECK:           %[[VAL_2:.*]] = "ttl.matmul"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.tensor<?x?x!ttl.float>, !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_2]]) : (!ttl.tensor<?x?x!ttl.float>) -> ()
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @matrix_init(
 // CHECK-SAME:                           %[[VAL_0:.*]]: !ttl.float, %[[VAL_1:.*]]: !ttl.float, %[[VAL_2:.*]]: !ttl.float, %[[VAL_3:.*]]: !ttl.float,
-// CHECK-SAME:                           %[[VAL_4:.*]]: !ttl.float) -> !ttl.tensor<2x2 x !ttl.float> {
+// CHECK-SAME:                           %[[VAL_4:.*]]: !ttl.float) -> !ttl.tensor<2x2x!ttl.float> {
 // CHECK:           %[[VAL_5:.*]] = "ttl.add"(%[[VAL_3]], %[[VAL_4]]) : (!ttl.float, !ttl.float) -> !ttl.float
-// CHECK:           %[[VAL_6:.*]] = "ttl.tensor_list_init"(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]], %[[VAL_5]]) : (!ttl.float, !ttl.float, !ttl.float, !ttl.float) -> !ttl.tensor<2x2 x !ttl.float>
-// CHECK:           "ttl.return"(%[[VAL_6]]) : (!ttl.tensor<2x2 x !ttl.float>) -> ()
+// CHECK:           %[[VAL_6:.*]] = "ttl.tensor_list_init"(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]], %[[VAL_5]]) : (!ttl.float, !ttl.float, !ttl.float, !ttl.float) -> !ttl.tensor<2x2x!ttl.float>
+// CHECK:           "ttl.return"(%[[VAL_6]]) : (!ttl.tensor<2x2x!ttl.float>) -> ()
 // CHECK:         }
 

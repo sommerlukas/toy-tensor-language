@@ -185,6 +185,13 @@ public:
 
   llvm::ArrayRef<MatrixSize> sizes() { return Sizes; }
 
+  bool isStatic() { return !isDynamic(); }
+
+  bool isDynamic() {
+    return llvm::any_of(Sizes,
+                        [](const MatrixSize &S) { return S.isDynamic(); });
+  }
+
   std::ostream &dump(std::ostream &os) const override {
     os << text(elem(), Sizes);
     return os;
@@ -199,6 +206,7 @@ public:
   void ty(TypePtr SetTy) { Ty = SetTy; }
   TypePtr ty() { return Ty; }
   virtual void accept(ASTVisitor *visitor) = 0;
+  virtual bool isRangeExpr() { return false; }
 };
 
 template <typename Derived> class Expr : public ExprBase {
@@ -286,6 +294,8 @@ public:
   ExprPtr start() { return Start; }
 
   ExprPtr end() { return End; }
+
+  bool isRangeExpr() override { return true; }
 };
 
 class MatrixInit : public Expr<MatrixInit> {

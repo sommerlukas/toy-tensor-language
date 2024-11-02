@@ -25,9 +25,6 @@ mlir::Type translateType(TypePtr Ty, mlir::MLIRContext *Ctx) {
   if (Ty->isVoidTy()) {
     return mlir::ttl::VoidType::get(Ctx);
   }
-  if (Ty->isRangeTy()) {
-    return mlir::ttl::RangeType::get(Ctx);
-  }
   assert(Ty->isMatrixTy());
   auto MatrixTy = static_cast<::ttl::ast::MatrixType *>(Ty);
   mlir::Type ElemTy = translateType(MatrixTy->elem(), Ctx);
@@ -92,43 +89,44 @@ CodeGenVisitor::createFloatConstant(::ttl::ast::ASTNodePtrBase *Node,
 
 void CodeGenVisitor::visit(ast::VarDef *Node) {
   mlir::Type ResulTy = translateType(Node->ty(), Ctx);
-  if (!Node->hasInit()) {
-    // Variables without explicit initializer are zero-initialized.
-    Value Init;
-    if (Node->ty()->isIntTy()) {
-      Init = createIntConstant(Node, 0);
-    }
-    if (Node->ty()->isFloatTy()) {
-      Init = createFloatConstant(Node, 0.0f);
-    }
+  Value Init = [&](ast::VarDef *Node) -> Value {
     if (Node->ty()->isMatrixTy()) {
-      auto MatrixTy = static_cast<MatrixType *>(Node->ty());
-      Value ScalarInit = (MatrixTy->elem()->isFloatTy())
-                             ? createFloatConstant(Node, 0.0f)
-                             : createIntConstant(Node, 0);
-      Init = Builder.create<TensorScalarInit>(translateLoc(Node), ResulTy,
-                                              ScalarInit);
+      // Tensor random initialization.
+      if (!Node->hasInit()) {
+        return Builder.create<TensorRandomInit>(translateLoc(Node), ResulTy);
+      }
+      Node->init()->accept(this);
+      TypePtr InitTy = Node->init()->ty();
+      // Tensor scalar initialization.
+      if (InitTy->isIntTy() || InitTy->isFloatTy()) {
+        Value Scalar = ValueMap[Node->init()];
+        return Builder.create<TensorScalarInit>(translateLoc(Node), ResulTy,
+                                                Scalar);
+      }
+      // Tensor range initialization.
+      if (InitTy->isRangeTy()) {
+        assert(Node->init()->isRangeExpr());
+        auto Range = static_cast<RangeExpr *>(Node->init());
+        Value Start = ValueMap[Range->start()];
+        Value End = ValueMap[Range->end()];
+        return Builder.create<TensorRangeInit>(translateLoc(Node), ResulTy,
+                                               Start, End);
+      }
+      return ValueMap[Node->init()];
     }
-    LastDefs[Node->ref()] = Init;
-    return;
-  }
-  ExprPtr InitExpr = Node->init();
-  InitExpr->accept(this);
-  Value Init = ValueMap.at(InitExpr);
-  if (Node->ty()->isMatrixTy() && !InitExpr->ty()->isMatrixTy()) {
-    if (InitExpr->ty()->isFloatTy() || InitExpr->ty()->isIntTy()) {
-      Value ScalarInit =
-          Builder.create<TensorScalarInit>(translateLoc(Node), ResulTy, Init);
-      LastDefs[Node->ref()] = ScalarInit;
-      return;
+    if (!Node->hasInit()) {
+      if (Node->ty()->isIntTy()) {
+        return createIntConstant(Node, 0);
+      }
+      if (Node->ty()->isFloatTy()) {
+        return createFloatConstant(Node, 0.0);
+      }
     }
-    if (InitExpr->ty()->isRangeTy()) {
-      Value RangeInit =
-          Builder.create<TensorRangeInit>(translateLoc(Node), ResulTy, Init);
-      LastDefs[Node->ref()] = RangeInit;
-      return;
-    }
-  }
+    assert(Node->hasInit());
+    Node->init()->accept(this);
+    return ValueMap[Node->init()];
+  }(Node);
+
   LastDefs[Node->ref()] = Init;
 }
 
@@ -193,6 +191,7 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   Value Start;
   Value End;
   if (Node->range()->ty()->isRangeTy()) {
+    assert(Node->range()->isRangeExpr());
     auto *Range = static_cast<RangeExpr *>(Node->range());
     Range->start()->accept(this);
     Start = ValueMap[Range->start()];
@@ -285,14 +284,27 @@ void CodeGenVisitor::visit(ast::CompoundStmt *Node) {
 void CodeGenVisitor::visit(ast::SliceExpr *Node) {
   Node->matrix()->accept(this);
   Value Mat = ValueMap[Node->matrix()];
-  llvm::SmallVector<mlir::Value> Slices;
+  llvm::SmallVector<mlir::Value> Offsets;
+  llvm::SmallVector<mlir::Value> Sizes;
   for (auto S : Node->slices()) {
     S->accept(this);
-    Slices.push_back(ValueMap[S]);
+    if (S->ty()->isIntTy()) {
+      Offsets.push_back(ValueMap[S]);
+      Sizes.push_back(createIntConstant(Node, 1));
+      continue;
+    }
+    assert(S->isRangeExpr());
+    auto *Range = static_cast<RangeExpr *>(S);
+    Value Start = ValueMap[Range->start()];
+    Value End = ValueMap[Range->end()];
+    Value Size = Builder.create<mlir::ttl::Sub>(translateLoc(Node),
+                                                Start.getType(), End, Start);
+    Offsets.push_back(Start);
+    Sizes.push_back(Size);
   }
   mlir::Type ResultTy = translateType(Node->ty(), Ctx);
   auto Result = Builder.create<mlir::ttl::Slice>(translateLoc(Node), ResultTy,
-                                                 Mat, Slices);
+                                                 Mat, Offsets, Sizes);
   ValueMap[Node] = Result;
 }
 
@@ -377,12 +389,7 @@ void CodeGenVisitor::visit(ast::MatrixInit *Node) {
 
 void CodeGenVisitor::visit(ast::RangeExpr *Node) {
   Node->start()->accept(this);
-  Value Start = ValueMap[Node->start()];
   Node->end()->accept(this);
-  Value End = ValueMap[Node->end()];
-  Value Result =
-      Builder.create<mlir::ttl::Range>(translateLoc(Node), Start, End);
-  ValueMap[Node] = Result;
 }
 
 void CodeGenVisitor::visit(ast::CallExpr *Node) {

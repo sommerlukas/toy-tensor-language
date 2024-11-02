@@ -18,9 +18,6 @@ def TTLFloatType : TTLType<"Float", "float"> {
 def TTLVoidType : TTLType<"Void", "void"> {
   let summary = "TTL void type";
 }
-def TTLRangeType : TTLType<"Range", "range"> {
-  let summary = "TTL range type";
-}
 
 def TTLTensorType : TTLType<"Tensor", "tensor"> {
 
@@ -40,7 +37,7 @@ def TTLTensorType : TTLType<"Tensor", "tensor"> {
     }]>
   ];
 
-  let assemblyFormat = "`<` custom<TTLShape>($shape) `x` $elementType `>`";
+  let hasCustomAssemblyFormat = 1;
 }
 
 def TTLScalarType : AnyTypeOf<[TTLIntType, TTLFloatType]> {}
@@ -48,7 +45,6 @@ def TTLScalarType : AnyTypeOf<[TTLIntType, TTLFloatType]> {}
 def TTLValueType : AnyTypeOf<[
                            TTLIntType,
                            TTLFloatType,
-                           TTLRangeType,
                            TTLTensorType],
                            "TTL value type"> {}
 
@@ -56,7 +52,5 @@ def TTLFuncType : AnyTypeOf<[
                             TTLValueType,
                             TTLVoidType],
                             "TTL function type"> {}
-
-def TTLSliceType : AnyTypeOf<[TTLIntType, TTLRangeType]> {}
 
 #endif // TTL_TYPES
