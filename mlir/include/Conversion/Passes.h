@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TTLToTensor/TTLToTensor.h"
+#include "TTLToLinalg/TTLToLinalg.h"
 #include "mlir/Pass/PassRegistry.h"
 
 namespace mlir {

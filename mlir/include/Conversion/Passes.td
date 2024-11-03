@@ -12,4 +12,13 @@ def TTLToTensor : Pass<"convert-ttl-to-tensor", "ModuleOp"> {
 
 }
 
+def TTLToLinalg : Pass<"convert-ttl-to-linalg", "ModuleOp"> {
+
+  let summary = "Convert TTL dialect operations to Linalg dialect operations";
+
+  let dependentDialects = ["linalg::LinalgDialect", "index::IndexDialect", 
+                            "arith::ArithDialect"];
+
+}
+
 #endif // MLIR_TTL_CONVERSION_PASSES

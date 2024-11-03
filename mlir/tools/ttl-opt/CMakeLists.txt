@@ -6,6 +6,7 @@ set(LIBS
         ${conversion_libs}
         MLIROptLib
         TTLToTensor
+        TTLToLinalg
         )
 add_llvm_executable(ttl-opt ttl-opt.cpp)
 

@@ -1,8 +1,8 @@
 #include "Conversion/TTLToTensor/TTLToTensor.h"
 
+#include "../TTLTypeConverter.h"
 #include "Dialect/TTL/TTLDialect.h"
 #include "Dialect/TTL/TTLOps.h"
-#include "TTLTypeConverter.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Index/IR/IndexDialect.h"
 #include "mlir/Dialect/Index/IR/IndexOps.h"
