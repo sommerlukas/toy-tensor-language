@@ -1,2 +1,3 @@
 add_subdirectory(TTLToTensor)
 add_subdirectory(TTLToLinalg)
+add_subdirectory(TTLToScalar)

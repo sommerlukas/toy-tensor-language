@@ -2,6 +2,7 @@
 
 #include "TTLToTensor/TTLToTensor.h"
 #include "TTLToLinalg/TTLToLinalg.h"
+#include "TTLToScalar/TTLToScalar.h"
 #include "mlir/Pass/PassRegistry.h"
 
 namespace mlir {

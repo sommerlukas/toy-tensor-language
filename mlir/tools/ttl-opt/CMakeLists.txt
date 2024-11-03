@@ -7,6 +7,7 @@ set(LIBS
         MLIROptLib
         TTLToTensor
         TTLToLinalg
+        TTLToScalar
         )
 add_llvm_executable(ttl-opt ttl-opt.cpp)
 

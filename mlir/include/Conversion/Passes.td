@@ -21,4 +21,13 @@ def TTLToLinalg : Pass<"convert-ttl-to-linalg", "ModuleOp"> {
 
 }
 
+def TTLToScalar : Pass<"convert-ttl-to-scalar", "ModuleOp"> {
+
+  let summary = "Convert scalar and control flow TTL dialect operations upstream dialect operations";
+
+  let dependentDialects = ["scf::SCFDialect", "index::IndexDialect", 
+                            "arith::ArithDialect", "func::FuncDialect"];
+
+}
+
 #endif // MLIR_TTL_CONVERSION_PASSES

@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
   mlir::registerAllPasses();
   mlir::ttl::registerTTLToTensor();
   mlir::ttl::registerTTLToLinalg();
+  mlir::ttl::registerTTLToScalar();
   // TODO: Register more passes here.
 
   mlir::DialectRegistry Registry;
