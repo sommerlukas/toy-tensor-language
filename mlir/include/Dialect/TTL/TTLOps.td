@@ -47,8 +47,8 @@ def Compare : TTLOp<"cmp"> {
   let results = (outs TTLIntType:$cmpResult);
 }
 
-def TensorRandomInit : TTLOp<"tensor_random_init"> {
-  let summary = "TTL initialize tensor with random values";
+def TensorEmpty : TTLOp<"tensor_empty"> {
+  let summary = "TTL initialize empty tensor";
 
   let results = (outs TTLTensorType:$tensor);
 }

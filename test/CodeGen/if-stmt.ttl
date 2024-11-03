@@ -32,7 +32,7 @@ function float control_flow_if(int cond1, int cond2){
 // CHECK-SAME:                               %[[VAL_0:.*]]: !ttl.int,
 // CHECK-SAME:                               %[[VAL_1:.*]]: !ttl.int) -> !ttl.float {
 // CHECK:           %[[VAL_2:.*]] = "ttl.const_float"() <{constVal = 0.000000e+00 : f32}> : () -> !ttl.float
-// CHECK:           %[[VAL_3:.*]] = "ttl.tensor_random_init"() : () -> !ttl.tensor<2x2x!ttl.float>
+// CHECK:           %[[VAL_3:.*]] = "ttl.tensor_empty"() : () -> !ttl.tensor<2x2x!ttl.float>
 // CHECK:           %[[VAL_4:.*]] = "ttl.const_int"() <{constVal = 42 : i32}> : () -> !ttl.int
 // CHECK:           %[[VAL_5:.*]] = "ttl.const_int"() <{constVal = 5 : i32}> : () -> !ttl.int
 // CHECK:           %[[VAL_6:.*]] = "ttl.const_int"() <{constVal = 4 : i32}> : () -> !ttl.int

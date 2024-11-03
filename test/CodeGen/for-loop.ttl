@@ -26,8 +26,8 @@ function float control_flow_if(int cond1, int start1, int end1, int num){
 
 // CHECK-LABEL:   "func.func"() <{function_type = (!ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float, sym_name = "control_flow_if"}> ({
 // CHECK:         ^bb0(%[[VAL_0:.*]]: !ttl.int, %[[VAL_1:.*]]: !ttl.int, %[[VAL_2:.*]]: !ttl.int, %[[VAL_3:.*]]: !ttl.int):
-// CHECK:           %[[VAL_4:.*]] = "ttl.tensor_random_init"() : () -> !ttl.tensor<8x8x!ttl.float>
-// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_random_init"() : () -> !ttl.tensor<8x!ttl.float>
+// CHECK:           %[[VAL_4:.*]] = "ttl.tensor_empty"() : () -> !ttl.tensor<8x8x!ttl.float>
+// CHECK:           %[[VAL_5:.*]] = "ttl.tensor_empty"() : () -> !ttl.tensor<8x!ttl.float>
 // CHECK:           %[[VAL_6:.*]] = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
 // CHECK:           %[[VAL_7:.*]] = "ttl.const_float"() <{constVal = 6.000000e+00 : f32}> : () -> !ttl.float
 // CHECK:           %[[VAL_8:.*]] = "ttl.const_float"() <{constVal = 8.000000e+00 : f32}> : () -> !ttl.float

@@ -116,6 +116,19 @@ struct RangeInitLowering : public OpConversionPattern<ttl::TensorRangeInit> {
   }
 };
 
+struct EmptyLowering : public OpConversionPattern<ttl::TensorEmpty> {
+
+  using OpConversionPattern<ttl::TensorEmpty>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(TensorEmpty op, TensorEmpty::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto resultTy = typeConverter->convertType(op.getResult().getType());
+    rewriter.replaceOpWithNewOp<tensor::EmptyOp>(op, resultTy, ValueRange{});
+    return success();
+  }
+};
+
 struct InsertLowering : public OpConversionPattern<ttl::TensorInsert> {
   using OpConversionPattern<ttl::TensorInsert>::OpConversionPattern;
 
@@ -223,16 +236,16 @@ void ConvertTTLToTensorPass::runOnOperation() {
                          arith::ArithDialect>();
 
   target.addLegalDialect<ttl::TTLDialect>();
-  target.addIllegalOp<ttl::TensorScalarInit, ttl::TensorRangeInit,
-                      ttl::TensorListInit, ttl::TensorInsert, ttl::Dim,
-                      ttl::Slice>();
+  target.addIllegalOp<ttl::TensorEmpty, ttl::TensorScalarInit,
+                      ttl::TensorRangeInit, ttl::TensorListInit,
+                      ttl::TensorInsert, ttl::Dim, ttl::Slice>();
 
   TTLTypeConverter typeConverter;
 
   RewritePatternSet patterns(&getContext());
-  patterns.add<ScalarInitLowering, RangeInitLowering, ListInitLowering,
-               InsertLowering, DimLowering, SliceLowering, SliceSingleLowering>(
-      typeConverter, &getContext());
+  patterns.add<EmptyLowering, ScalarInitLowering, RangeInitLowering,
+               ListInitLowering, InsertLowering, DimLowering, SliceLowering,
+               SliceSingleLowering>(typeConverter, &getContext());
 
   ModuleOp Module = getOperation();
 

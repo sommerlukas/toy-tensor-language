@@ -80,7 +80,7 @@ function matrix<float>[2,2] dyn_matrix_elem_assign(float a, int b, int c){
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @matrix_zero_init() -> !ttl.tensor<2x2x!ttl.int> {
-// CHECK:           %[[VAL_0:.*]] = "ttl.tensor_random_init"() : () -> !ttl.tensor<2x2x!ttl.int>
+// CHECK:           %[[VAL_0:.*]] = "ttl.tensor_empty"() : () -> !ttl.tensor<2x2x!ttl.int>
 // CHECK:           "ttl.return"(%[[VAL_0]]) : (!ttl.tensor<2x2x!ttl.int>) -> ()
 // CHECK:         }
 

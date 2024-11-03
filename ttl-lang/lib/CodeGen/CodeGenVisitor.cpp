@@ -93,7 +93,7 @@ void CodeGenVisitor::visit(ast::VarDef *Node) {
     if (Node->ty()->isMatrixTy()) {
       // Tensor random initialization.
       if (!Node->hasInit()) {
-        return Builder.create<TensorRandomInit>(translateLoc(Node), ResulTy);
+        return Builder.create<TensorEmpty>(translateLoc(Node), ResulTy);
       }
       Node->init()->accept(this);
       TypePtr InitTy = Node->init()->ty();
