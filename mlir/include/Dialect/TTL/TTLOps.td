@@ -142,6 +142,31 @@ def If : TTLOp<"if"> {
                         MaxSizedRegion<1>:$elseRegion);
 }
 
+def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {
+  let summary = "TTL for loop";
+
+  let arguments = (ins TTLIntType:$lowerBound, 
+                        TTLIntType:$upperBound, 
+                        TTLIntType:$step, 
+                        Variadic<TTLValueType>:$initArgs);
+
+  let results = (outs Variadic<TTLValueType>:$results);
+
+  let regions = (region SizedRegion<1>:$region);
+
+  let skipDefaultBuilders = 1;
+  let builders = [
+    OpBuilder<(ins "Value":$lowerBound, "Value":$upperBound, "Value":$step, 
+                    CArg<"ValueRange", "std::nullopt">:$initArgs)>
+  ];
+
+  let extraClassDeclaration = [{
+    
+    Value getInductionVar() { return getBody()->getArgument(0); }
+
+  }];
+}
+
 
 // TODO: Compare, Constant
 // TODO: For, If, Return

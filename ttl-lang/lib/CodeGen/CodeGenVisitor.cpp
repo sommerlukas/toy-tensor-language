@@ -169,7 +169,7 @@ void collectAssignees(StmtPtr S, llvm::SmallPtrSetImpl<VarRefPtr> &Assignees) {
     }
   }
   if (S->isForLoop()) {
-    collectAssignees(static_cast<ForLoop *>(S)->body(), Assignees);
+    collectAssignees(static_cast<::ttl::ast::ForLoop *>(S)->body(), Assignees);
   }
   auto Assign = S->assigns();
   if (Assign) {
@@ -205,7 +205,7 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   Node->step()->accept(this);
   Value Step = ValueMap[Node->step()];
   auto ForOp =
-      Builder.create<scf::ForOp>(translateLoc(Node), Start, End, Step, InArgs);
+      Builder.create<mlir::ttl::ForLoop>(translateLoc(Node), Start, End, Step, InArgs);
   LastDefs[Node->ref()] = ForOp.getInductionVar();
   size_t ArgIdx = 1;
   for (auto A : AssignList) {
@@ -217,7 +217,7 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   for (auto A : AssignList) {
     NewDefs.push_back(LastDefs[A]);
   }
-  Builder.create<scf::YieldOp>(translateLoc(Node), NewDefs);
+  Builder.create<mlir::ttl::Yield>(translateLoc(Node), NewDefs);
   // After the loop, the last definition for values written inside the loop is
   // the values returned by the loop.
   for (auto AV : llvm::zip(AssignList, ForOp.getResults())) {
