@@ -1,0 +1,2 @@
+set(LLVM_EXE_BINARY_DIR ${LLVM_BUILD_BINARY_DIR}/bin)
+configure_file(ttlc.py ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ttlc)
