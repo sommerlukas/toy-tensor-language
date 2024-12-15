@@ -204,8 +204,8 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   }
   Node->step()->accept(this);
   Value Step = ValueMap[Node->step()];
-  auto ForOp =
-      Builder.create<mlir::ttl::ForLoop>(translateLoc(Node), Start, End, Step, InArgs);
+  auto ForOp = Builder.create<mlir::ttl::ForLoop>(translateLoc(Node), Start,
+                                                  End, Step, InArgs);
   LastDefs[Node->ref()] = ForOp.getInductionVar();
   size_t ArgIdx = 1;
   for (auto A : AssignList) {
@@ -249,14 +249,16 @@ void CodeGenVisitor::visit(ast::IfStmt *Node) {
   }
   Builder.create<mlir::ttl::Yield>(translateLoc(Node), ThenDefs);
 
-  if (Node->hasElse()) {
+  if (Node->hasElse() || !AssignList.empty()) {
     // Reset to the values before we entered the 'then' region.
     for (auto A : AssignList) {
       LastDefs[A] = Before[A];
     }
     auto *ElseBlock = Builder.createBlock(&IfOp.getElseRegion());
     Builder.setInsertionPointToStart(ElseBlock);
-    Node->elseStmt()->accept(this);
+    if (Node->hasElse()) {
+      Node->elseStmt()->accept(this);
+    }
     llvm::SmallVector<Value> ElseDefs;
     for (auto A : AssignList) {
       ElseDefs.push_back(LastDefs[A]);
