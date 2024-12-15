@@ -14,16 +14,20 @@ public:
     addConversion([&](ttl::IntType type) {
       return IntegerType::get(type.getContext(), 32);
     });
+    addConversion([&](mlir::IntegerType type) { return type; });
     addConversion([&](ttl::FloatType type) {
       return Float32Type::get(type.getContext());
     });
+    addConversion([&](mlir::FloatType type) { return type; });
     addConversion([&](ttl::VoidType type) {
       return mlir::NoneType::get(type.getContext());
     });
+    addConversion([&](mlir::NoneType type) { return type; });
     addConversion([&](ttl::TensorType type) {
       return RankedTensorType::get(type.getShape(),
                                    convertType(type.getElementType()));
     });
+    addConversion([&](mlir::RankedTensorType type) { return type; });
 
     addArgumentMaterialization([&](OpBuilder &builder, Type resultType,
                                    ValueRange inputs, Location loc) {
@@ -36,8 +40,7 @@ public:
           .getResult(0);
     });
     addTargetMaterialization([&](OpBuilder &builder, Type resultType,
-                                 ValueRange inputs,
-                                 Location loc) -> Value {
+                                 ValueRange inputs, Location loc) -> Value {
       return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
           .getResult(0);
     });

@@ -161,6 +161,110 @@ struct FloatCompareLowering : OpConversionPattern<ttl::Compare> {
   }
 };
 
+struct IfLowering : OpConversionPattern<ttl::If> {
+  using OpConversionPattern<ttl::If>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(ttl::If op, ttl::If::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    SmallVector<Type> resultTys;
+    for (auto t : op.getResultTypes()) {
+      resultTys.push_back(typeConverter->convertType(t));
+    }
+    Value newCond = adaptor.getCond();
+    Value zero = rewriter.create<arith::ConstantOp>(
+        op.getLoc(), rewriter.getIntegerAttr(newCond.getType(), 0));
+    auto nonZero = rewriter.create<arith::CmpIOp>(
+        op.getLoc(), arith::CmpIPredicate::ne, newCond, zero);
+    auto newIf = rewriter.create<scf::IfOp>(op.getLoc(), resultTys, nonZero);
+    newIf.getThenRegion().takeBody(op.getThenRegion());
+    newIf.getElseRegion().takeBody(op.getElseRegion());
+    rewriter.replaceOp(op, newIf);
+    return success();
+  }
+};
+
+struct ForLoopConversion : OpConversionPattern<ttl::ForLoop> {
+  using OpConversionPattern<ttl::ForLoop>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(ttl::ForLoop op, ttl::ForLoop::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    scf::ForOp newLoop = rewriter.create<scf::ForOp>(
+        op.getLoc(), adaptor.getLowerBound(), adaptor.getUpperBound(),
+        adaptor.getStep(), adaptor.getInitArgs());
+
+    if (failed(rewriter.convertRegionTypes(&op.getRegion(), *typeConverter))) {
+      return rewriter.notifyMatchFailure(op, "region type conversion failed");
+    }
+    rewriter.mergeBlocks(op.getBody(0), newLoop.getBody(0),
+                         newLoop.getBody(0)->getArguments());
+    rewriter.replaceOp(op, newLoop);
+    return success();
+  }
+};
+
+struct YieldLowering : OpConversionPattern<ttl::Yield> {
+  using OpConversionPattern<ttl::Yield>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(ttl::Yield op, ttl::Yield::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    rewriter.replaceOpWithNewOp<scf::YieldOp>(op, adaptor.getOperands());
+    return success();
+  }
+};
+
+struct FuncConversion : OpConversionPattern<func::FuncOp> {
+
+  using OpConversionPattern<func::FuncOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(func::FuncOp op, func::FuncOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    SmallVector<Type> argTys;
+    FunctionType oldFuncTy = op.getFunctionType();
+    for (auto t : oldFuncTy.getInputs()) {
+      argTys.push_back(typeConverter->convertType(t));
+    }
+    FunctionType newFuncTy = rewriter.getFunctionType(
+        argTys, typeConverter->convertType(oldFuncTy.getResult(0)));
+    auto newFunc =
+        rewriter.create<func::FuncOp>(op.getLoc(), op.getName(), newFuncTy);
+    rewriter.inlineRegionBefore(op.getFunctionBody(), newFunc.getBody(),
+                                newFunc.end());
+    if (failed(
+            rewriter.convertRegionTypes(&newFunc.getBody(), *typeConverter))) {
+      return rewriter.notifyMatchFailure(op, "region type conversion failed");
+    }
+    rewriter.eraseOp(op);
+    return success();
+  }
+};
+
+struct ReturnLowering : OpConversionPattern<ttl::Return> {
+  using OpConversionPattern<ttl::Return>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(ttl::Return op, ttl::Return::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, adaptor.getOperands());
+    return success();
+  }
+};
+
+template <typename ReplaceOp>
+struct ConstantLowering : OpConversionPattern<ReplaceOp> {
+  using OpConversionPattern<ReplaceOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(ReplaceOp op, typename ReplaceOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    rewriter.replaceOpWithNewOp<arith::ConstantOp>(op, op.getConstValAttr());
+    return success();
+  }
+};
+
 struct ConvertTTLToScalarPass
     : public ttl::impl::TTLToScalarBase<ConvertTTLToScalarPass> {
 
@@ -183,9 +287,13 @@ void ConvertTTLToScalarPass::runOnOperation() {
       [](Operation *op) {
         return isa<ttl::TensorType>(op->getResults().front().getType());
       });
-  target.addIllegalOp<ttl::And, ttl::Or, ttl::Not, ttl::Minus, ttl::Compare>();
-
   TTLTypeConverter typeConverter;
+  target.addDynamicallyLegalOp<func::FuncOp>([&](func::FuncOp op) {
+    return typeConverter.isSignatureLegal(op.getFunctionType());
+  });
+  target.addIllegalOp<ttl::And, ttl::Or, ttl::Not, ttl::Minus, ttl::Compare,
+                      ttl::If, ttl::Yield, ttl::Return, ttl::FloatConstant,
+                      ttl::IntConstant, ttl::ForLoop>();
 
   RewritePatternSet patterns(&getContext());
   patterns.add<BinaryOpLowering<ttl::Add, arith::AddIOp, arith::AddFOp>,
@@ -194,8 +302,11 @@ void ConvertTTLToScalarPass::runOnOperation() {
                BinaryOpLowering<ttl::Div, arith::DivSIOp, arith::DivFOp>,
                BinaryOpLowering<ttl::And, arith::AndIOp>,
                BinaryOpLowering<ttl::Or, arith::OrIOp>, NotLowering,
-               MinusLowering, IntegerCompareLowering, FloatCompareLowering>(
-      typeConverter, &getContext());
+               MinusLowering, IntegerCompareLowering, FloatCompareLowering,
+               IfLowering, YieldLowering, FuncConversion, ReturnLowering,
+               ForLoopConversion, ConstantLowering<ttl::FloatConstant>,
+               ConstantLowering<ttl::IntConstant>>(typeConverter,
+                                                   &getContext());
 
   ModuleOp Module = getOperation();
 
