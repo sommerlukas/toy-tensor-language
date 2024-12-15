@@ -92,6 +92,8 @@ def Dim : TTLOp<"dim"> {
   let arguments = (ins TTLTensorType:$tensor, TTLIntType:$dimension);
 
   let results = (outs TTLIntType:$dimSize);
+
+  let hasFolder = 1;
 }
 
 def Slice : TTLOp<"slice", [SameVariadicOperandSize]> {
@@ -101,6 +103,8 @@ def Slice : TTLOp<"slice", [SameVariadicOperandSize]> {
                         Variadic<TTLIntType>:$sizes);
 
   let results = (outs TTLValueType:$slice);
+
+  let hasCanonicalizer = 1;
 }
 
 def Yield : TTLOp<"yield", [Pure, ReturnLike, Terminator]> {
@@ -115,20 +119,24 @@ def Return : TTLOp<"return", [ReturnLike, Terminator]> {
   let arguments = (ins TTLValueType:$retVal);
 }
 
-def IntConstant : TTLOp<"const_int", [Pure]> {
+def IntConstant : TTLOp<"const_int", [Pure, ConstantLike]> {
   let summary = "TTL constant integer";
 
   let arguments = (ins I32Attr:$constVal);
 
   let results = (outs TTLIntType:$val);
+
+  let hasFolder = 1;
 }
 
-def FloatConstant : TTLOp<"const_float", [Pure]> {
+def FloatConstant : TTLOp<"const_float", [Pure, ConstantLike]> {
   let summary = "TTL constant float";
 
   let arguments = (ins F32Attr:$constVal);
 
   let results = (outs TTLFloatType:$val);
+
+  let hasFolder = 1;
 }
 
 def If : TTLOp<"if"> {

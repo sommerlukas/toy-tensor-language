@@ -12,6 +12,8 @@ def TTLDialect : Dialect {
   let extraClassDeclaration = [{
         void registerTypes();
   }];
+
+  let hasConstantMaterializer = 1;
 }
 
 class TTLOp<string mnemonic, list<Trait> traits = []> : 
