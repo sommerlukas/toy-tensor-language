@@ -69,7 +69,7 @@ void CodeGenVisitor::visit(ast::Function *Node) {
   Builder.setInsertionPointToStart(FuncBody);
   for (StmtPtr S : Node->body()) {
     S->accept(this);
-    if (S->isReturn()) {
+    if (is_class<ReturnStmt>(S)) {
       break;
     }
   }
@@ -105,8 +105,7 @@ void CodeGenVisitor::visit(ast::VarDef *Node) {
       }
       // Tensor range initialization.
       if (InitTy->isRangeTy()) {
-        assert(Node->init()->isRangeExpr());
-        auto Range = static_cast<RangeExpr *>(Node->init());
+        auto Range = ::ttl::ast::cast<RangeExpr>(Node->init());
         Value Start = ValueMap[Range->start()];
         Value End = ValueMap[Range->end()];
         return Builder.create<TensorRangeInit>(translateLoc(Node), ResulTy,
@@ -156,20 +155,19 @@ void CodeGenVisitor::visit(ast::CallStmt *Node) { Node->call()->accept(this); }
 namespace {
 
 void collectAssignees(StmtPtr S, llvm::SmallPtrSetImpl<VarRefPtr> &Assignees) {
-  if (S->isCompound()) {
-    llvm::for_each(
-        static_cast<CompoundStmt *>(S)->statements(),
-        [&](StmtPtr Nested) { collectAssignees(Nested, Assignees); });
+  if (auto *Compound = ::ttl::ast::cast_or_null<CompoundStmt>(S)) {
+    llvm::for_each(Compound->statements(), [&](StmtPtr Nested) {
+      collectAssignees(Nested, Assignees);
+    });
   }
-  if (S->isIfStmt()) {
-    IfStmt *IfS = static_cast<IfStmt *>(S);
+  if (auto *IfS = ::ttl::ast::cast_or_null<IfStmt>(S)) {
     collectAssignees(IfS->then(), Assignees);
     if (IfS->hasElse()) {
       collectAssignees(IfS->elseStmt(), Assignees);
     }
   }
-  if (S->isForLoop()) {
-    collectAssignees(static_cast<::ttl::ast::ForLoop *>(S)->body(), Assignees);
+  if (auto *Loop = ::ttl::ast::cast_or_null<::ttl::ast::ForLoop>(S)) {
+    collectAssignees(Loop->body(), Assignees);
   }
   auto Assign = S->assigns();
   if (Assign) {
@@ -191,8 +189,7 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   Value Start;
   Value End;
   if (Node->range()->ty()->isRangeTy()) {
-    assert(Node->range()->isRangeExpr());
-    auto *Range = static_cast<RangeExpr *>(Node->range());
+    auto* Range = ::ttl::ast::cast<RangeExpr>(Node->range());
     Range->start()->accept(this);
     Start = ValueMap[Range->start()];
     Range->end()->accept(this);
@@ -295,8 +292,7 @@ void CodeGenVisitor::visit(ast::SliceExpr *Node) {
       Sizes.push_back(createIntConstant(Node, 1));
       continue;
     }
-    assert(S->isRangeExpr());
-    auto *Range = static_cast<RangeExpr *>(S);
+    auto* Range = ::ttl::ast::cast<RangeExpr>(S);
     Value Start = ValueMap[Range->start()];
     Value End = ValueMap[Range->end()];
     Value Size = Builder.create<mlir::ttl::Sub>(translateLoc(Node),

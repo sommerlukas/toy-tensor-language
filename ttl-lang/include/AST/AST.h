@@ -15,6 +15,19 @@
 namespace ttl::ast {
 class ASTContext;
 
+class ASTClassID {
+public:
+  using class_id_t = size_t;
+
+  template <typename T> static class_id_t class_id() {
+    static class_id_t classID = Counter++;
+    return classID;
+  }
+
+private:
+  static class_id_t Counter;
+};
+
 class ASTNodePtrBase {
   size_t ID = 0;
 
@@ -30,6 +43,8 @@ public:
   size_t id() { return ID; }
 
   ASTContext *context() { return Ctx; }
+
+  virtual ASTClassID::class_id_t class_id() const = 0;
 
   virtual ~ASTNodePtrBase() = default;
 };
@@ -206,7 +221,6 @@ public:
   void ty(TypePtr SetTy) { Ty = SetTy; }
   TypePtr ty() { return Ty; }
   virtual void accept(ASTVisitor *visitor) = 0;
-  virtual bool isRangeExpr() { return false; }
 };
 
 template <typename Derived> class Expr : public ExprBase {
@@ -215,6 +229,13 @@ public:
 
   void accept(ASTVisitor *visitor) override {
     visitor->visit(static_cast<Derived *>(this));
+  }
+
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<Derived>();
+    return classID;
   }
 };
 
@@ -294,8 +315,6 @@ public:
   ExprPtr start() { return Start; }
 
   ExprPtr end() { return End; }
-
-  bool isRangeExpr() override { return true; }
 };
 
 class MatrixInit : public Expr<MatrixInit> {
@@ -386,11 +405,7 @@ class StatementBase : public ASTNodePtrBase {
 public:
   virtual ~StatementBase() = default;
   virtual void accept(ASTVisitor *visitor) = 0;
-  virtual bool isReturn() { return false; }
   virtual VarRefPtr assigns() { return nullptr; }
-  virtual bool isCompound() { return false; }
-  virtual bool isForLoop() { return false; }
-  virtual bool isIfStmt() { return false; }
 };
 
 template <typename Derived> class Statement : public StatementBase {
@@ -399,6 +414,13 @@ public:
 
   void accept(ASTVisitor *visitor) override {
     visitor->visit(static_cast<Derived *>(this));
+  }
+
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<Derived>();
+    return classID;
   }
 };
 
@@ -413,8 +435,6 @@ class CompoundStmt : public Statement<CompoundStmt> {
 
 public:
   llvm::ArrayRef<StmtPtr> statements() { return Statements; }
-
-  bool isCompound() override { return true; }
 };
 
 class ReturnStmt : public Statement<ReturnStmt> {
@@ -426,8 +446,6 @@ class ReturnStmt : public Statement<ReturnStmt> {
 
 public:
   ExprPtr retVal() { return RetVal; }
-
-  bool isReturn() override { return true; }
 };
 
 class IfStmt : public Statement<IfStmt> {
@@ -447,7 +465,6 @@ public:
   StmtPtr then() { return Then; }
   StmtPtr elseStmt() { return Else; }
   bool hasElse() { return Else != nullptr; }
-  bool isIfStmt() override { return true; }
 };
 
 class ForLoop : public Statement<ForLoop> {
@@ -469,7 +486,6 @@ public:
   ExprPtr range() { return IdxRange; }
   ExprPtr step() { return Step; }
   StmtPtr body() { return Body; }
-  bool isForLoop() override { return true; }
 };
 
 class CallStmt : public Statement<CallStmt> {
@@ -555,6 +571,13 @@ class FuncParam : public ASTNodePtrBase {
 
   friend ASTContext;
 
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<FuncParam>();
+    return classID;
+  }
+
 public:
   TypePtr ty() { return Ty; }
   const std::string &name() { return Name; }
@@ -580,6 +603,13 @@ class Function : public ASTNodePtrBase {
 
   friend ASTContext;
 
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<Function>();
+    return classID;
+  }
+
 public:
   TypePtr returnType() { return RetTy; }
   const std::string &name() { return FuncName; }
@@ -596,6 +626,13 @@ class Module : public ASTNodePtrBase {
 
   friend ASTContext;
 
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<Module>();
+    return classID;
+  }
+
 public:
   llvm::ArrayRef<Function *> funcs() { return Funcs; }
 
@@ -609,6 +646,13 @@ class VarRef : public ASTNodePtrBase {
   std::variant<VarDef *, FuncParam *> Value;
 
   friend ASTContext;
+
+  ASTClassID::class_id_t class_id() const override { return ClassID(); }
+
+  static ASTClassID::class_id_t ClassID() {
+    static auto classID = ASTClassID::class_id<VarRef>();
+    return classID;
+  }
 
 public:
   bool isVariable() { return std::holds_alternative<VarDef *>(Value); }
@@ -646,5 +690,33 @@ public:
 
   void accept(ASTVisitor *visitor) { visitor->visit(this); }
 };
+
+template <typename T> bool is_class(ASTNodePtrBase *A) {
+  return A->class_id() == T::ClassID();
+}
+
+template <typename T> T *cast(ASTNodePtrBase *A) {
+  assert(is_class<T>(A) && "Invalid cast");
+  return static_cast<T *>(A);
+}
+
+template <typename T> T *cast_or_null(ASTNodePtrBase *A) {
+  if (!is_class<T>(A)) {
+    return nullptr;
+  }
+  return static_cast<T *>(A);
+}
+
+template <typename T> const T *cast(const ASTNodePtrBase *A) {
+  assert(is_class<T>(A) && "Invalid cast");
+  return static_cast<const T *>(A);
+}
+
+template <typename T> const T *cast_or_null(const ASTNodePtrBase *A) {
+  if (!is_class<T>(A)) {
+    return nullptr;
+  }
+  return static_cast<const T *>(A);
+}
 
 } // namespace ttl::ast
