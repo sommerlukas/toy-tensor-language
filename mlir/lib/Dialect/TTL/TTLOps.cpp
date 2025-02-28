@@ -39,42 +39,30 @@ OpFoldResult FloatConstant::fold(FoldAdaptor adaptor) {
   return adaptor.getConstValAttr();
 }
 
-namespace {
-
-struct SliceCanonicalizer : public OpRewritePattern<ttl::Slice> {
-  using OpRewritePattern<ttl::Slice>::OpRewritePattern;
-
-  LogicalResult matchAndRewrite(ttl::Slice op,
-                                PatternRewriter &rewriter) const override {
-    if (!op.getTensor().getDefiningOp()) {
-      return rewriter.notifyMatchFailure(op, "Unknown matrix");
-    }
-    auto scalarFill =
-        dyn_cast<ttl::TensorScalarInit>(op.getTensor().getDefiningOp());
-    if (!scalarFill) {
-      return rewriter.notifyMatchFailure(op, "Not a scalar initializer");
-    }
-    for (auto S : op.getSizes()) {
-      if (!S.getDefiningOp()) {
-        return rewriter.notifyMatchFailure(op, "Unknown size");
-      }
-      auto constInt = dyn_cast<ttl::IntConstant>(S.getDefiningOp());
-      if (!constInt) {
-        return rewriter.notifyMatchFailure(op, "Not a constant size");
-      }
-      if (constInt.getConstVal() != 1) {
-        return rewriter.notifyMatchFailure(op, "Not size 1");
-      }
-    }
-    rewriter.replaceOp(op, scalarFill.getInitVal());
-    return success();
+OpFoldResult Slice::fold(FoldAdaptor adaptor) {
+  if (!getTensor().getDefiningOp()) {
+    return nullptr;
   }
-};
-} // namespace
+  auto scalarFill =
+      dyn_cast<ttl::TensorScalarInit>(getTensor().getDefiningOp());
+  if (!scalarFill) {
+    return nullptr;
+  }
+  for (auto S : adaptor.getSizes()) {
+    if (!S) {
+      // Null attribute, one of the sizes wasn't constant
+      return nullptr;
+    }
 
-void Slice::getCanonicalizationPatterns(RewritePatternSet &patterns,
-                                        MLIRContext *context) {
-  patterns.add(std::make_unique<SliceCanonicalizer>(context));
+    IntegerAttr constSize = dyn_cast<IntegerAttr>(S);
+    if (!constSize) {
+      return nullptr;
+    }
+    if (constSize.getValue().getZExtValue() != 1) {
+      return nullptr;
+    }
+  }
+  return scalarFill.getInitVal();
 }
 
 OpFoldResult Dim::fold(FoldAdaptor adaptor) {
@@ -91,4 +79,30 @@ OpFoldResult Dim::fold(FoldAdaptor adaptor) {
     return nullptr;
   }
   return IntegerAttr::get(IntegerType::get(getContext(), 32), sizeInDim);
+}
+
+namespace {
+
+struct ListInitCanonicalizer : public OpRewritePattern<ttl::TensorListInit> {
+  using OpRewritePattern<ttl::TensorListInit>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(ttl::TensorListInit op,
+                                PatternRewriter &rewriter) const override {
+    Value firstElement = op.getElements().front();
+    bool allEqual = llvm::all_of(
+        op.getElements(), [&](Value elem) { return elem == firstElement; });
+    if (!allEqual) {
+      return rewriter.notifyMatchFailure(op, "Not all elements equal");
+    }
+
+    rewriter.replaceOpWithNewOp<ttl::TensorScalarInit>(
+        op, op.getResult().getType(), firstElement);
+    return success();
+  }
+};
+} // namespace
+
+void TensorListInit::getCanonicalizationPatterns(RewritePatternSet &patterns,
+                                                 MLIRContext *context) {
+  patterns.add(std::make_unique<ListInitCanonicalizer>(context));
 }

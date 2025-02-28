@@ -75,6 +75,8 @@ def TensorListInit : TTLOp<"tensor_list_init"> {
   let arguments = (ins Variadic<TTLScalarType>:$elements);
 
   let results = (outs TTLTensorType:$tensor);
+
+  let hasCanonicalizer = 1;
 }
 
 def TensorInsert : TTLOp<"tensor_insert"> {
@@ -104,7 +106,7 @@ def Slice : TTLOp<"slice", [SameVariadicOperandSize]> {
 
   let results = (outs TTLValueType:$slice);
 
-  let hasCanonicalizer = 1;
+  let hasFolder = 1;
 }
 
 def Yield : TTLOp<"yield", [Pure, ReturnLike, Terminator]> {
