@@ -1,2 +1,8 @@
 set(LLVM_EXE_BINARY_DIR ${LLVM_BUILD_BINARY_DIR}/bin)
+set(LLVM_LIB_BINARY_DIR ${LLVM_BUILD_BINARY_DIR}/lib)
 configure_file(ttlc.py ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ttlc)
+
+add_custom_target(ttlc
+  DEPENDS
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ttlc
+)

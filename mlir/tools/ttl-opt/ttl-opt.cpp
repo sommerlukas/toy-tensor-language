@@ -15,12 +15,13 @@
 #include "llvm/Support/ToolOutputFile.h"
 
 int main(int argc, char **argv) {
+  // Register passes, including TTL conversion passes.
   mlir::registerAllPasses();
   mlir::ttl::registerTTLToTensor();
   mlir::ttl::registerTTLToLinalg();
   mlir::ttl::registerTTLToScalar();
-  // TODO: Register more passes here.
 
+  // Register dialects.
   mlir::DialectRegistry Registry;
   Registry.insert<mlir::ttl::TTLDialect>();
   Registry.insert<mlir::func::FuncDialect>();
@@ -28,10 +29,25 @@ int main(int argc, char **argv) {
   Registry.insert<mlir::index::IndexDialect>();
   Registry.insert<mlir::linalg::LinalgDialect>();
   Registry.insert<mlir::tensor::TensorDialect>();
-  // Add the following to include *all* MLIR Core dialects, or selectively
-  // include what you need like above. You only need to register dialects that
-  // will be *parsed* by the tool, not the one generated
-  // registerAllDialects(Registry);
+  Registry.insert<mlir::arith::ArithDialect>();
+  Registry.insert<mlir::cf::ControlFlowDialect>();
+  Registry.insert<mlir::memref::MemRefDialect>();
+  Registry.insert<mlir::LLVM::LLVMDialect>();
+
+  // Register extension interfaces uses by bufferization.
+  mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(
+      Registry);
+  mlir::arith::registerBufferDeallocationOpInterfaceExternalModels(Registry);
+  mlir::arith::registerBufferizableOpInterfaceExternalModels(Registry);
+  mlir::arith::registerBufferViewFlowOpInterfaceExternalModels(Registry);
+  mlir::cf::registerBufferizableOpInterfaceExternalModels(Registry);
+  mlir::cf::registerBufferDeallocationOpInterfaceExternalModels(Registry);
+  mlir::linalg::registerAllDialectInterfaceImplementations(Registry);
+  mlir::memref::registerAllocationOpInterfaceExternalModels(Registry);
+  mlir::memref::registerBufferViewFlowOpInterfaceExternalModels(Registry);
+  mlir::scf::registerBufferDeallocationOpInterfaceExternalModels(Registry);
+  mlir::scf::registerBufferizableOpInterfaceExternalModels(Registry);
+  mlir::tensor::registerBufferizableOpInterfaceExternalModels(Registry);
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "TTL MLIR optimizer driver\n", Registry));
