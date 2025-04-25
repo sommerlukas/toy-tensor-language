@@ -29,11 +29,6 @@ public:
     });
     addConversion([&](mlir::RankedTensorType type) { return type; });
 
-    addArgumentMaterialization([&](OpBuilder &builder, Type resultType,
-                                   ValueRange inputs, Location loc) {
-      return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
-          .getResult(0);
-    });
     addSourceMaterialization([&](OpBuilder &builder, Type resultType,
                                  ValueRange inputs, Location loc) {
       return builder.create<UnrealizedConversionCastOp>(loc, resultType, inputs)
