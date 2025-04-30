@@ -242,6 +242,23 @@ struct FuncConversion : OpConversionPattern<func::FuncOp> {
   }
 };
 
+struct CallConverion : OpConversionPattern<func::CallOp> {
+  using OpConversionPattern<func::CallOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(func::CallOp op, func::CallOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    SmallVector<Type> NewResultTypes;
+    if (failed(
+            typeConverter->convertTypes(op.getResultTypes(), NewResultTypes))) {
+      return rewriter.notifyMatchFailure(op, "result type conversion failed");
+    }
+    rewriter.replaceOpWithNewOp<func::CallOp>(
+        op, NewResultTypes, adaptor.getCallee(), adaptor.getOperands());
+    return success();
+  }
+};
+
 struct ReturnLowering : OpConversionPattern<ttl::Return> {
   using OpConversionPattern<ttl::Return>::OpConversionPattern;
 
@@ -291,22 +308,24 @@ void ConvertTTLToScalarPass::runOnOperation() {
   target.addDynamicallyLegalOp<func::FuncOp>([&](func::FuncOp op) {
     return typeConverter.isSignatureLegal(op.getFunctionType());
   });
+  target.addDynamicallyLegalOp<func::CallOp>(
+      [&](func::CallOp op) { return typeConverter.isLegal(op); });
   target.addIllegalOp<ttl::And, ttl::Or, ttl::Not, ttl::Minus, ttl::Compare,
                       ttl::If, ttl::Yield, ttl::Return, ttl::FloatConstant,
                       ttl::IntConstant, ttl::ForLoop>();
 
   RewritePatternSet patterns(&getContext());
-  patterns.add<BinaryOpLowering<ttl::Add, arith::AddIOp, arith::AddFOp>,
-               BinaryOpLowering<ttl::Sub, arith::SubIOp, arith::SubFOp>,
-               BinaryOpLowering<ttl::Mul, arith::MulIOp, arith::MulFOp>,
-               BinaryOpLowering<ttl::Div, arith::DivSIOp, arith::DivFOp>,
-               BinaryOpLowering<ttl::And, arith::AndIOp>,
-               BinaryOpLowering<ttl::Or, arith::OrIOp>, NotLowering,
-               MinusLowering, IntegerCompareLowering, FloatCompareLowering,
-               IfLowering, YieldLowering, FuncConversion, ReturnLowering,
-               ForLoopConversion, ConstantLowering<ttl::FloatConstant>,
-               ConstantLowering<ttl::IntConstant>>(typeConverter,
-                                                   &getContext());
+  patterns
+      .add<BinaryOpLowering<ttl::Add, arith::AddIOp, arith::AddFOp>,
+           BinaryOpLowering<ttl::Sub, arith::SubIOp, arith::SubFOp>,
+           BinaryOpLowering<ttl::Mul, arith::MulIOp, arith::MulFOp>,
+           BinaryOpLowering<ttl::Div, arith::DivSIOp, arith::DivFOp>,
+           BinaryOpLowering<ttl::And, arith::AndIOp>,
+           BinaryOpLowering<ttl::Or, arith::OrIOp>, NotLowering, MinusLowering,
+           IntegerCompareLowering, FloatCompareLowering, IfLowering,
+           YieldLowering, FuncConversion, CallConverion, ReturnLowering,
+           ForLoopConversion, ConstantLowering<ttl::FloatConstant>,
+           ConstantLowering<ttl::IntConstant>>(typeConverter, &getContext());
 
   ModuleOp Module = getOperation();
 
