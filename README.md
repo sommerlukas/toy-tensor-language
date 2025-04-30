@@ -17,8 +17,13 @@ compile from source input to executable.
 There are currently no binary packages available for the compiler, so you will
 have to build it from source, following these instructions.
 
-First, choose a directory where you want the build to live and export it as
-`BASE_DIR`, e.g.:
+ANTLR uses Java, so you will need to install a Java runtime. This can be done
+through the OS package manager, e.g., `apt install openjdk-21-jre-headless`. 
+ANTLR also needs the Universal Unique ID (UUID) library headers. On Ubuntu,
+these can be installed via `apt install uuid-dev`.
+
+As first step of the build process, choose a directory where you want the build
+to live and export it as `BASE_DIR`, e.g.:
 
 ```sh
 export BASE_DIR=/tmp/ttlc
