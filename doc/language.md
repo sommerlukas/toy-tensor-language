@@ -6,6 +6,26 @@ As the name indicates, this language is not intended to be a full-blown
 programming language, but rather a vehicle to demonstrate the basics of
 building an MLIR-based compiler.
 
+While the exact rules of the language will be introduced throughout this
+document, the following is a simple example of a valid program:
+
+```
+function matrix<int>[4, 4] calc(matrix<int>[4, 4] a, int b){
+  var matrix<int>[4,4] bMat = b;
+  return a # bMat;
+}
+
+function int main(){
+  var matrix<int>[4, 4] a = 0...16;
+  var int b = 5;
+  var matrix<int>[4, 4] c = calc(a, b);
+  var int alpha = 4;
+  var int beta = 17;
+  var matrix<int>[?, ?] d = (c * alpha) + beta;
+  return d{1, 2};
+}
+```
+
 ## Language Basics
 
 The language is not sensitive to whitespace or identation.
@@ -13,11 +33,11 @@ The language is not sensitive to whitespace or identation.
 Comments in code can be inserted with `//` for a line comment or `/*` followed
 by `*/` for a block comment.
 
-Integer numeric literals are given through a sequence of one or more numbers
+Integer numeric literals are given through a sequence of one or more digits 
 0-9.
 
 Floating-point numeric literals are given through a sequence of one or more
-numbers 0-9, followed by `.` and another sequence of one or more numbers 0-9.
+digits 0-9, followed by `.` and another sequence of one or more digits 0-9.
 Scientific notation is currently not supported.
 
 Identifiers need to start with a lower- or upper-case character and consist of
@@ -59,9 +79,11 @@ matrix <float> [?, ?]
 matrix <int> [?, 6]
 ```
 
-Next to these explicit types, the language implictly uses a `range` type. It is
-however not possible to define variables of `range` type and the use of values
-of `range` type is limited to specific language constructs.
+Next to these explicit types, the language implictly uses a `range` type. The
+`range` type represents a range of integer numbers from a given start
+(inclusive) to a given end (exclusive). It is however not possible to define
+variables of `range` type and the use of values of `range` type is limited to
+specific language constructs.
 
 ## Structure of a Program
 
@@ -89,7 +111,7 @@ The name is followed by the argument list of the function, enclosed by `(` and
 `range` type are allowed, and a name given as valid identifier. The argument
 list can consist of zero or more arguments.
 
-The last element is the body of the function, a sequence of one or more
+The last element is the body of the function, a sequence of zero or more
 statements enclosed by `{` and `}`.
 
 ## Statements
@@ -128,7 +150,7 @@ if their shape is entirely static:
 - Initialization of a matrix with a range. If the range is dynamic, i.e., its
   start or end are given by a variable not known at compile time, it is
   undefined behavior if the number of elements in the range does not match
-  the numer of elements in the matrix at runtime. This initialization is only
+  the number of elements in the matrix at runtime. This initialization is only
   possible for matrix with integer element type.
 - Initialization of a matrix with a single scalar, where the single value is
   broadcasted to all elements of the matrix. The type of the scalar must match
