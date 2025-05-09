@@ -7,7 +7,7 @@ func.func @dim_dyn(%arg0: !ttl.tensor<?x?x?x!ttl.int>, %arg1: !ttl.int) -> !ttl.
 
 func.func @slice_mixed(%arg0: !ttl.tensor<?x?x!ttl.int>, %arg1: !ttl.int, %arg2: !ttl.int, %arg3: !ttl.int) -> !ttl.tensor<?x1x!ttl.int> {
   %0 = "ttl.sub"(%arg2, %arg1) : (!ttl.int, !ttl.int) -> !ttl.int
-  %1 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+  %1 = ttl.const_int 1
   %2 = "ttl.slice"(%arg0, %arg1, %arg3, %0, %1) : (!ttl.tensor<?x?x!ttl.int>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.tensor<?x1x!ttl.int>
   "ttl.return"(%2) : (!ttl.tensor<?x1x!ttl.int>) -> ()
 }
@@ -21,9 +21,9 @@ func.func @slice_range(%arg0: !ttl.tensor<16x16x16x!ttl.float>, %arg1: !ttl.int,
 }
 
 func.func @slice_int(%arg0: !ttl.tensor<?x?x?x!ttl.float>, %arg1: !ttl.int, %arg2: !ttl.int, %arg3: !ttl.int) -> !ttl.float {
-  %0 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-  %1 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-  %2 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+  %0 = ttl.const_int 1
+  %1 = ttl.const_int 1
+  %2 = ttl.const_int 1
   %3 = "ttl.slice"(%arg0, %arg1, %arg2, %arg3, %0, %1, %2) : (!ttl.tensor<?x?x?x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
   "ttl.return"(%3) : (!ttl.float) -> ()
 }
@@ -57,7 +57,7 @@ func.func @matrix_init(%arg0: !ttl.float, %arg1: !ttl.float, %arg2: !ttl.float, 
 // CHECK:           %[[VAL_6:.*]] = builtin.unrealized_conversion_cast %[[VAL_0]] : !ttl.tensor<?x?x!ttl.int> to tensor<?x?xi32>
 // CHECK:           %[[VAL_7:.*]] = "ttl.sub"(%[[VAL_2]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.int
 // CHECK:           %[[VAL_8:.*]] = builtin.unrealized_conversion_cast %[[VAL_7]] : !ttl.int to i32
-// CHECK:           %[[VAL_9:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_9:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_10:.*]] = index.casts %[[VAL_5]] : i32 to index
 // CHECK:           %[[VAL_11:.*]] = index.casts %[[VAL_8]] : i32 to index
 // CHECK:           %[[VAL_12:.*]] = index.casts %[[VAL_4]] : i32 to index
@@ -99,9 +99,9 @@ func.func @matrix_init(%arg0: !ttl.float, %arg1: !ttl.float, %arg2: !ttl.float, 
 // CHECK:           %[[VAL_5:.*]] = builtin.unrealized_conversion_cast %[[VAL_2]] : !ttl.int to i32
 // CHECK:           %[[VAL_6:.*]] = builtin.unrealized_conversion_cast %[[VAL_1]] : !ttl.int to i32
 // CHECK:           %[[VAL_7:.*]] = builtin.unrealized_conversion_cast %[[VAL_0]] : !ttl.tensor<?x?x?x!ttl.float> to tensor<?x?x?xf32>
-// CHECK:           %[[VAL_8:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_9:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_10:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_8:.*]] = ttl.const_int 1
+// CHECK:           %[[VAL_9:.*]] = ttl.const_int 1
+// CHECK:           %[[VAL_10:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_11:.*]] = index.casts %[[VAL_6]] : i32 to index
 // CHECK:           %[[VAL_12:.*]] = index.casts %[[VAL_5]] : i32 to index
 // CHECK:           %[[VAL_13:.*]] = index.casts %[[VAL_4]] : i32 to index

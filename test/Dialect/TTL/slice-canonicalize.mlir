@@ -4,29 +4,29 @@ module {
   func.func @constant_slice() -> !ttl.float {
     %0 = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
     %1 = "ttl.tensor_scalar_init"(%0) : (!ttl.float) -> !ttl.tensor<4x4x!ttl.float>
-    %2 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-    %3 = "ttl.const_int"() <{constVal = 3 : i32}> : () -> !ttl.int
-    %4 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-    %5 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+    %2 = ttl.const_int 1
+    %3 = ttl.const_int 3
+    %4 = ttl.const_int 1
+    %5 = ttl.const_int 1
     %6 = "ttl.slice"(%1, %2, %3, %4, %5) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
     "ttl.return"(%6) : (!ttl.float) -> ()
   }
   func.func @non_constant_slice1() -> !ttl.tensor<?x?x!ttl.float> {
     %0 = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
     %1 = "ttl.tensor_scalar_init"(%0) : (!ttl.float) -> !ttl.tensor<4x4x!ttl.float>
-    %2 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-    %3 = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
-    %4 = "ttl.const_int"() <{constVal = 3 : i32}> : () -> !ttl.int
-    %5 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+    %2 = ttl.const_int 1
+    %3 = ttl.const_int 0
+    %4 = ttl.const_int 3
+    %5 = ttl.const_int 1
     %6 = "ttl.sub"(%4, %3) : (!ttl.int, !ttl.int) -> !ttl.int
     %7 = "ttl.slice"(%1, %2, %3, %5, %6) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.tensor<1x?x!ttl.float>
     "ttl.return"(%7) : (!ttl.tensor<1x?x!ttl.float>) -> ()
   }
   func.func @non_constant_slice2(%arg0: !ttl.tensor<4x4x!ttl.float>) -> !ttl.float {
-    %0 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-    %1 = "ttl.const_int"() <{constVal = 3 : i32}> : () -> !ttl.int
-    %2 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-    %3 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+    %0 = ttl.const_int 1
+    %1 = ttl.const_int 3
+    %2 = ttl.const_int 1
+    %3 = ttl.const_int 1
     %4 = "ttl.slice"(%arg0, %0, %1, %2, %3) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
     "ttl.return"(%4) : (!ttl.float) -> ()
   }
@@ -41,9 +41,9 @@ module {
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @non_constant_slice1() -> !ttl.tensor<?x?x!ttl.float> {
-// CHECK:           %[[VAL_0:.*]] = "ttl.const_int"() <{constVal = 3 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_1:.*]] = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_2:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_0:.*]] = ttl.const_int 3
+// CHECK:           %[[VAL_1:.*]] = ttl.const_int 0
+// CHECK:           %[[VAL_2:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_3:.*]] = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
 // CHECK:           %[[VAL_4:.*]] = "ttl.tensor_scalar_init"(%[[VAL_3]]) : (!ttl.float) -> !ttl.tensor<4x4x!ttl.float>
 // CHECK:           %[[VAL_5:.*]] = "ttl.sub"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.int
@@ -53,8 +53,8 @@ module {
 
 // CHECK-LABEL:   func.func @non_constant_slice2(
 // CHECK-SAME:                                   %[[VAL_0:.*]]: !ttl.tensor<4x4x!ttl.float>) -> !ttl.float {
-// CHECK:           %[[VAL_1:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-// CHECK:           %[[VAL_2:.*]] = "ttl.const_int"() <{constVal = 3 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_1:.*]] = ttl.const_int 1
+// CHECK:           %[[VAL_2:.*]] = ttl.const_int 3
 // CHECK:           %[[VAL_3:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]], %[[VAL_1]], %[[VAL_1]]) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
 // CHECK:           "ttl.return"(%[[VAL_3]]) : (!ttl.float) -> ()
 // CHECK:         }
