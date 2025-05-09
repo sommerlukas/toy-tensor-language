@@ -12,8 +12,8 @@ func.func @matrix_scalar_init() -> !ttl.tensor<3x4x!ttl.float> {
 }
 
 func.func @matrix_range_init() -> !ttl.tensor<4x4x!ttl.int> {
-  %0 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
-  %1 = "ttl.const_int"() <{constVal = 17 : i32}> : () -> !ttl.int
+  %0 = ttl.const_int 1
+  %1 = ttl.const_int 17
   %2 = "ttl.tensor_range_init"(%0, %1) : (!ttl.int, !ttl.int) -> !ttl.tensor<4x4x!ttl.int>
   "ttl.return"(%2) : (!ttl.tensor<4x4x!ttl.int>) -> ()
 }
@@ -21,8 +21,8 @@ func.func @matrix_range_init() -> !ttl.tensor<4x4x!ttl.int> {
 func.func @fixed_matrix_elem_assign(%arg0: !ttl.float) -> !ttl.tensor<2x2x!ttl.float> {
   %0 = "ttl.const_float"() <{constVal = 2.500000e+01 : f32}> : () -> !ttl.float
   %1 = "ttl.tensor_scalar_init"(%0) : (!ttl.float) -> !ttl.tensor<2x2x!ttl.float>
-  %2 = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
-  %3 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+  %2 = ttl.const_int 0
+  %3 = ttl.const_int 1
   %4 = "ttl.tensor_insert"(%1, %arg0, %2, %3) : (!ttl.tensor<2x2x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2x!ttl.float>
   "ttl.return"(%4) : (!ttl.tensor<2x2x!ttl.float>) -> ()
 }
@@ -51,9 +51,9 @@ func.func @dyn_matrix_elem_assign(%arg0: !ttl.float, %arg1: !ttl.int, %arg2: !tt
 // CHECK:         }
 
 // CHECK-LABEL:   func.func @matrix_range_init() -> !ttl.tensor<4x4x!ttl.int> {
-// CHECK:           %[[VAL_0:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_0:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_1:.*]] = builtin.unrealized_conversion_cast %[[VAL_0]] : !ttl.int to i32
-// CHECK:           %[[VAL_2:.*]] = "ttl.const_int"() <{constVal = 17 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_2:.*]] = ttl.const_int 17
 // CHECK:           %[[VAL_3:.*]] = tensor.generate  {
 // CHECK:           ^bb0(%[[VAL_4:.*]]: index, %[[VAL_5:.*]]: index):
 // CHECK:             %[[VAL_6:.*]] = index.constant 4
@@ -73,9 +73,9 @@ func.func @dyn_matrix_elem_assign(%arg0: !ttl.float, %arg1: !ttl.int, %arg2: !tt
 // CHECK:           %[[VAL_2:.*]] = "ttl.const_float"() <{constVal = 2.500000e+01 : f32}> : () -> !ttl.float
 // CHECK:           %[[VAL_3:.*]] = builtin.unrealized_conversion_cast %[[VAL_2]] : !ttl.float to f32
 // CHECK:           %[[VAL_4:.*]] = tensor.splat %[[VAL_3]] : tensor<2x2xf32>
-// CHECK:           %[[VAL_5:.*]] = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_5:.*]] = ttl.const_int 0
 // CHECK:           %[[VAL_6:.*]] = builtin.unrealized_conversion_cast %[[VAL_5]] : !ttl.int to i32
-// CHECK:           %[[VAL_7:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_7:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_8:.*]] = builtin.unrealized_conversion_cast %[[VAL_7]] : !ttl.int to i32
 // CHECK:           %[[VAL_9:.*]] = index.casts %[[VAL_6]] : i32 to index
 // CHECK:           %[[VAL_10:.*]] = index.casts %[[VAL_8]] : i32 to index

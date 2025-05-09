@@ -129,6 +129,8 @@ def IntConstant : TTLOp<"const_int", [Pure, ConstantLike]> {
   let results = (outs TTLIntType:$val);
 
   let hasFolder = 1;
+
+  let assemblyFormat = [{ attr-dict $constVal }];
 }
 
 def FloatConstant : TTLOp<"const_float", [Pure, ConstantLike]> {
@@ -150,6 +152,11 @@ def If : TTLOp<"if"> {
 
   let regions = (region SizedRegion<1>:$thenRegion,
                         MaxSizedRegion<1>:$elseRegion);
+  
+  let assemblyFormat = [{
+    $cond `:` functional-type(operands, results) $thenRegion
+      (`else` $elseRegion^)? attr-dict
+  }];
 }
 
 def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {

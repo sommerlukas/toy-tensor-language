@@ -7,10 +7,10 @@ module {
     %2 = "ttl.const_int"() <{constVal = 42 : i32}> : () -> !ttl.int
     %3 = "ttl.const_int"() <{constVal = 5 : i32}> : () -> !ttl.int
     %4 = "ttl.const_int"() <{constVal = 4 : i32}> : () -> !ttl.int
-    %5:5 = "ttl.if"(%arg0) ({
+    %5:5 = ttl.if %arg0 : (!ttl.int) -> (!ttl.float, !ttl.int, !ttl.int, !ttl.tensor<2x2x!ttl.float>, !ttl.int) {
       %12 = "ttl.const_float"() <{constVal = 3.000000e+00 : f32}> : () -> !ttl.float
       %13 = "ttl.const_int"() <{constVal = 25 : i32}> : () -> !ttl.int
-      %14:3 = "ttl.if"(%arg1) ({
+      %14:3 = ttl.if %arg1 : (!ttl.int) -> (!ttl.int, !ttl.float, !ttl.tensor<2x2x!ttl.float>) {
         %16 = "ttl.const_int"() <{constVal = 42 : i32}> : () -> !ttl.int
         %17 = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
         %18 = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
@@ -22,7 +22,7 @@ module {
         %24 = "ttl.const_float"() <{constVal = 7.000000e+00 : f32}> : () -> !ttl.float
         %25 = "ttl.tensor_insert"(%21, %24, %22, %23) : (!ttl.tensor<2x2x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2x!ttl.float>
         "ttl.yield"(%16, %17, %25) : (!ttl.int, !ttl.float, !ttl.tensor<2x2x!ttl.float>) -> ()
-      }, {
+      } else {
         %16 = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int
         %17 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
         %18 = "ttl.const_float"() <{constVal = 7.000000e+00 : f32}> : () -> !ttl.float
@@ -32,14 +32,14 @@ module {
         %22 = "ttl.const_float"() <{constVal = 1.000000e+01 : f32}> : () -> !ttl.float
         %23 = "ttl.tensor_insert"(%19, %22, %20, %21) : (!ttl.tensor<2x2x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<2x2x!ttl.float>
         "ttl.yield"(%4, %12, %23) : (!ttl.int, !ttl.float, !ttl.tensor<2x2x!ttl.float>) -> ()
-      }) : (!ttl.int) -> (!ttl.int, !ttl.float, !ttl.tensor<2x2x!ttl.float>)
+      }
       %15 = "ttl.const_float"() <{constVal = 9.000000e+00 : f32}> : () -> !ttl.float
       "ttl.yield"(%15, %13, %14#0, %14#2, %3) : (!ttl.float, !ttl.int, !ttl.int, !ttl.tensor<2x2x!ttl.float>, !ttl.int) -> ()
-    }, {
+    } else {
       %12 = "ttl.const_float"() <{constVal = 8.000000e+00 : f32}> : () -> !ttl.float
       %13 = "ttl.const_int"() <{constVal = 8 : i32}> : () -> !ttl.int
       "ttl.yield"(%12, %2, %4, %1, %13) : (!ttl.float, !ttl.int, !ttl.int, !ttl.tensor<2x2x!ttl.float>, !ttl.int) -> ()
-    }) : (!ttl.int) -> (!ttl.float, !ttl.int, !ttl.int, !ttl.tensor<2x2x!ttl.float>, !ttl.int)
+    }
     %6 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
     %7 = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
     %8 = "ttl.const_int"() <{constVal = 0 : i32}> : () -> !ttl.int

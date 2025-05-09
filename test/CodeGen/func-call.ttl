@@ -16,7 +16,7 @@ function float caller(matrix<float>[?] a){
 // CHECK-SAME:                      %[[VAL_0:.*]]: !ttl.tensor<?x!ttl.float>,
 // CHECK-SAME:                      %[[VAL_1:.*]]: !ttl.int,
 // CHECK-SAME:                      %[[VAL_2:.*]]: !ttl.float) -> !ttl.float {
-// CHECK:           %[[VAL_3:.*]] = "ttl.const_int"() <{constVal = 1 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_3:.*]] = ttl.const_int 1
 // CHECK:           %[[VAL_4:.*]] = "ttl.slice"(%[[VAL_0]], %[[VAL_1]], %[[VAL_3]]) : (!ttl.tensor<?x!ttl.float>, !ttl.int, !ttl.int) -> !ttl.float
 // CHECK:           %[[VAL_5:.*]] = "ttl.mul"(%[[VAL_4]], %[[VAL_2]]) : (!ttl.float, !ttl.float) -> !ttl.float
 // CHECK:           "ttl.return"(%[[VAL_5]]) : (!ttl.float) -> ()
@@ -24,7 +24,7 @@ function float caller(matrix<float>[?] a){
 
 // CHECK-LABEL:   func.func @caller(
 // CHECK-SAME:                      %[[VAL_0:.*]]: !ttl.tensor<?x!ttl.float>) -> !ttl.float {
-// CHECK:           %[[VAL_1:.*]] = "ttl.const_int"() <{constVal = 5 : i32}> : () -> !ttl.int
+// CHECK:           %[[VAL_1:.*]] = ttl.const_int 5
 // CHECK:           %[[VAL_2:.*]] = "ttl.const_float"() <{constVal = 4.200000e+01 : f32}> : () -> !ttl.float
 // CHECK:           %[[VAL_3:.*]] = call @callee(%[[VAL_0]], %[[VAL_1]], %[[VAL_2]]) : (!ttl.tensor<?x!ttl.float>, !ttl.int, !ttl.float) -> !ttl.float
 // CHECK:           "ttl.return"(%[[VAL_3]]) : (!ttl.float) -> ()
