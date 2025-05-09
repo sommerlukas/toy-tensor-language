@@ -43,11 +43,10 @@ function float control_flow_if(int cond1, int start1, int end1, int num){
 // CHECK:             %[[VAL_23:.*]] = ttl.const_int 2
 // CHECK:             %[[VAL_24:.*]]:2 = "ttl.for"(%[[VAL_22]], %[[VAL_3]], %[[VAL_23]], %[[VAL_17]], %[[VAL_18]]) ({
 // CHECK:             ^bb0(%[[VAL_25:.*]]: !ttl.int, %[[VAL_26:.*]]: !ttl.float, %[[VAL_27:.*]]: !ttl.tensor<8x8x!ttl.float>):
-// CHECK:               %[[VAL_28:.*]] = "ttl.if"(%[[VAL_0]]) ({
+// CHECK:               %[[VAL_28:.*]] = ttl.if %[[VAL_0]] : (!ttl.int) -> !ttl.float {
 // CHECK:                 %[[VAL_29:.*]] = "ttl.const_float"() <{constVal = 4.200000e+01 : f32}> : () -> !ttl.float
 // CHECK:                 "ttl.yield"(%[[VAL_29]]) : (!ttl.float) -> ()
-// CHECK:               }, {
-// CHECK:               }) : (!ttl.int) -> !ttl.float
+// CHECK:               }
 // CHECK:               %[[VAL_30:.*]] = "ttl.tensor_insert"(%[[VAL_27]], %[[VAL_20]], %[[VAL_14]], %[[VAL_25]]) : (!ttl.tensor<8x8x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<8x8x!ttl.float>
 // CHECK:               "ttl.yield"(%[[VAL_28]], %[[VAL_30]]) : (!ttl.float, !ttl.tensor<8x8x!ttl.float>) -> ()
 // CHECK:             }) : (!ttl.int, !ttl.int, !ttl.int, !ttl.float, !ttl.tensor<8x8x!ttl.float>) -> (!ttl.float, !ttl.tensor<8x8x!ttl.float>)

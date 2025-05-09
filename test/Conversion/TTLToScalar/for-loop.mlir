@@ -19,12 +19,12 @@ module {
       %26 = "ttl.const_int"() <{constVal = 2 : i32}> : () -> !ttl.int
       %27:2 = "ttl.for"(%25, %arg3, %26, %arg7, %arg8) ({
       ^bb0(%arg10: !ttl.int, %arg11: !ttl.float, %arg12: !ttl.tensor<8x8x!ttl.float>):
-        %29 = "ttl.if"(%arg0) ({
+        %29 = ttl.if %arg0 : (!ttl.int) -> !ttl.float {
           %31 = "ttl.const_float"() <{constVal = 4.200000e+01 : f32}> : () -> !ttl.float
           "ttl.yield"(%31) : (!ttl.float) -> ()
-        }, {
+        } else {
           "ttl.yield"(%arg11) : (!ttl.float) -> ()
-        }) : (!ttl.int) -> !ttl.float
+        }
         %30 = "ttl.tensor_insert"(%arg12, %23, %arg4, %arg10) : (!ttl.tensor<8x8x!ttl.float>, !ttl.float, !ttl.int, !ttl.int) -> !ttl.tensor<8x8x!ttl.float>
         "ttl.yield"(%29, %30) : (!ttl.float, !ttl.tensor<8x8x!ttl.float>) -> ()
       }) : (!ttl.int, !ttl.int, !ttl.int, !ttl.float, !ttl.tensor<8x8x!ttl.float>) -> (!ttl.float, !ttl.tensor<8x8x!ttl.float>)
