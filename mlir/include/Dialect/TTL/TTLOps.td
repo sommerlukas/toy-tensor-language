@@ -152,6 +152,11 @@ def If : TTLOp<"if"> {
 
   let regions = (region SizedRegion<1>:$thenRegion,
                         MaxSizedRegion<1>:$elseRegion);
+  
+  let assemblyFormat = [{
+    $cond `:` functional-type(operands, results) $thenRegion
+      (`else` $elseRegion^)? attr-dict
+  }];
 }
 
 def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {
