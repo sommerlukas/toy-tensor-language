@@ -201,6 +201,10 @@ std::any ASTBuilder::visitRange(TTLParser::RangeContext *ctx) {
   return createExpr<RangeExpr>(Start, End);
 }
 
+std::any ASTBuilder::visitWholeRange(TTLParser::WholeRangeContext *ctx) {
+  return createExpr<WholeRangeExpr>();
+}
+
 std::any ASTBuilder::visitParExpr(TTLParser::ParExprContext *ctx) {
   return ctx->expr()->accept(this);
 }

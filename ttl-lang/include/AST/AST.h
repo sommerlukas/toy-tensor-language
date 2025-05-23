@@ -76,7 +76,8 @@ public:
   bool isFloatTy() { return ID == 1; }
   bool isVoidTy() { return ID == 2; }
   bool isRangeTy() { return ID == 3; }
-  bool isMatrixTy() { return ID > 3; }
+  bool isWholeRangeTy() { return ID == 4; }
+  bool isMatrixTy() { return ID > 4; }
 
   friend bool operator==(const Type &L, const Type &R) { return L.ID == R.ID; }
   friend bool operator!=(const Type &L, const Type &R) { return L.ID != R.ID; }
@@ -133,6 +134,18 @@ class RangeType : public Type {
 public:
   std::ostream &dump(std::ostream &os) const override {
     os << "range";
+    return os;
+  }
+};
+
+class WholeRangeType : public Type {
+  WholeRangeType() : Type{4} {}
+
+  friend ASTContext;
+
+public:
+  std::ostream &dump(std::ostream &os) const override {
+    os << "wholerange";
     return os;
   }
 };
@@ -315,6 +328,13 @@ public:
   ExprPtr start() { return Start; }
 
   ExprPtr end() { return End; }
+};
+
+class WholeRangeExpr : public Expr<WholeRangeExpr> {
+
+  WholeRangeExpr() {}
+
+  friend ASTContext;
 };
 
 class MatrixInit : public Expr<MatrixInit> {
