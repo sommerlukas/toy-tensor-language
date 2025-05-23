@@ -13,6 +13,7 @@ public:
   FloatType *getFloatTy() { return getTy<FloatType, 1>(); }
   VoidType *getVoidTy() { return getTy<VoidType, 2>(); }
   RangeType *getRangeTy() { return getTy<RangeType, 3>(); }
+  WholeRangeType *getWholeRangeTy() { return getTy<WholeRangeType, 4>(); }
 
   MatrixType *getMatrixTy(TypePtr ElemTy, llvm::ArrayRef<MatrixSize> Sizes) {
     auto Text = MatrixType::text(ElemTy, Sizes);
@@ -57,7 +58,7 @@ private:
   }
 
   size_t NextNodeIdx = 0;
-  size_t NextMatrixTy = 4;
+  size_t NextMatrixTy = 5;
 
   std::unordered_map<size_t, std::unique_ptr<ASTNodePtrBase>> Nodes;
   std::unordered_map<size_t, std::unique_ptr<Type>> Types;
