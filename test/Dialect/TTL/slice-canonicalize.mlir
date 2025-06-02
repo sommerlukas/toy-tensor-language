@@ -11,7 +11,7 @@ module {
     %6 = "ttl.slice"(%1, %2, %3, %4, %5) : (!ttl.tensor<4x4x!ttl.float>, !ttl.int, !ttl.int, !ttl.int, !ttl.int) -> !ttl.float
     "ttl.return"(%6) : (!ttl.float) -> ()
   }
-  func.func @non_constant_slice1() -> !ttl.tensor<?x?x!ttl.float> {
+  func.func @non_constant_slice1() -> !ttl.tensor<1x?x!ttl.float> {
     %0 = "ttl.const_float"() <{constVal = 5.000000e+00 : f32}> : () -> !ttl.float
     %1 = "ttl.tensor_scalar_init"(%0) : (!ttl.float) -> !ttl.tensor<4x4x!ttl.float>
     %2 = ttl.const_int 1
@@ -40,7 +40,7 @@ module {
 // CHECK:           "ttl.return"(%[[VAL_0]]) : (!ttl.float) -> ()
 // CHECK:         }
 
-// CHECK-LABEL:   func.func @non_constant_slice1() -> !ttl.tensor<?x?x!ttl.float> {
+// CHECK-LABEL:   func.func @non_constant_slice1() -> !ttl.tensor<1x?x!ttl.float> {
 // CHECK:           %[[VAL_0:.*]] = ttl.const_int 3
 // CHECK:           %[[VAL_1:.*]] = ttl.const_int 0
 // CHECK:           %[[VAL_2:.*]] = ttl.const_int 1
