@@ -2,7 +2,6 @@
 #include "Dialect/TTL/TTLAttributes.h"
 #include "Dialect/TTL/TTLDialect.h"
 #include "Dialect/TTL/TTLTypes.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/OpImplementation.h"
 
 #define GET_OP_CLASSES
