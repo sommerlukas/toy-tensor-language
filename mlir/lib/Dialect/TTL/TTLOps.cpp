@@ -5,10 +5,6 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/OpImplementation.h"
 
-// Forward declaration, will be referenced by the op class definitions included
-// below
-static mlir::LogicalResult verifyTTLBinOp(mlir::Operation *op);
-
 #define GET_OP_CLASSES
 #include "Dialect/TTL/TTLOps.cpp.inc"
 
@@ -126,33 +122,6 @@ LogicalResult Return::verify() {
            << getRetVal().getType() << ", but the enclosing function @"
            << function.getSymName() << " expects "
            << functionResultTypes.front();
-
-  return success();
-}
-
-static LogicalResult verifyTTLBinOp(Operation *op) {
-  assert(op->getNumOperands() == 2 && op->getNumResults() == 1 &&
-         "Not a binary op");
-  auto operandTypes = op->getOperandTypes();
-  Type leftTy = operandTypes[0];
-  Type rightTy = operandTypes[1];
-  Type resTy = op->getResultTypes().front();
-
-  // Early exit for trivial case
-  if (leftTy == rightTy && rightTy == resTy)
-    return success();
-
-  auto leftTTy = dyn_cast<ttl::TensorType>(leftTy);
-  auto rightTTy = dyn_cast<ttl::TensorType>(rightTy);
-
-  // Element-wise operation
-  if (leftTTy && rightTTy) {
-    if (leftTTy.getElementType() != rightTTy.getElementType())
-      return op->emitError("tensor operands have different element types: ")
-             << leftTTy.getElementType() << " != " << rightTTy.getElementType();
-  }
-
-  // TODO: There are many more situations to check!
 
   return success();
 }

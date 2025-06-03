@@ -16,14 +16,6 @@ class TTLBinaryOp<string mnemonic, list<Trait> traits = []> :
   let arguments = (ins TTLValueType:$left, TTLValueType:$right);
 
   let results = (outs TTLValueType:$opResult);
-
-  // TODO: This should be a trait
-  let hasVerifier = 1;
-  let extraClassDefinition = [{
-    mlir::LogicalResult $cppClass::verify() {
-      return verifyTTLBinOp(*this);
-    }
-  }];
 }
 
 class TTLUnaryOp<string mnemonic> :
@@ -39,12 +31,7 @@ def Add : TTLBinaryOp<"add">;
 def Sub : TTLBinaryOp<"sub">;
 def Mul : TTLBinaryOp<"mul">;
 def Div : TTLBinaryOp<"div">;
-def MatMul : TTLBinaryOp<"matmul"> {
-  // TODO: Implement verifier for matmal, which is different than all the other
-  // binary ops. The following hack is another reason why this should be a trait
-  let hasVerifier = 0;
-  let extraClassDefinition = "";
-}
+def MatMul : TTLBinaryOp<"matmul">;
 def And : TTLBinaryOp<"and">;
 def Or : TTLBinaryOp<"or">;
 
