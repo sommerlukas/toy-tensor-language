@@ -115,7 +115,8 @@ def Yield : TTLOp<"yield", [Pure, ReturnLike, Terminator]> {
   let arguments = (ins Variadic<TTLValueType>:$results);
 }
 
-def Return : TTLOp<"return", [ReturnLike, Terminator]> {
+def Return : TTLOp<"return", [ReturnLike, Terminator,
+                              HasParent<"func::FuncOp">]> {
   let summary = "TTL function return";
 
   let arguments = (ins TTLValueType:$retVal);
