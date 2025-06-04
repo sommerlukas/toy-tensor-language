@@ -146,11 +146,10 @@ LogicalResult MatMul::verify() {
       !ShapedType::isDynamic(rightShape[0]) && leftShape[1] != rightShape[0])
     return emitError("shape mismatch in common dimension");
 
-  // Allowed: ? -> ?, 4 -> 4, 4 -> ?, but not: 4 -> 5, ? -> 4
-  if (!(leftShape[0] == resShape[0] || ShapedType::isDynamic(resShape[0])))
+  if (leftShape[0] != resShape[0])
     return emitError("result shape mismatch in first dimension");
 
-  if (!(rightShape[1] == resShape[1] || ShapedType::isDynamic(resShape[1])))
+  if (rightShape[1] != resShape[1])
     return emitError("result shape mismatch in second dimension");
 
   return success();
