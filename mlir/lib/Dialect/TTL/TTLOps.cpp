@@ -124,3 +124,68 @@ LogicalResult Return::verify() {
 
   return success();
 }
+
+LogicalResult MatMul::verify() {
+  auto leftTTy = dyn_cast<ttl::TensorType>(getLeft().getType());
+  auto rightTTy = dyn_cast<ttl::TensorType>(getRight().getType());
+  auto resTTy = dyn_cast<ttl::TensorType>(getType());
+  if (!leftTTy || !rightTTy || !resTTy ||
+      leftTTy.getElementType() != rightTTy.getElementType() ||
+      rightTTy.getElementType() != resTTy.getElementType())
+    return emitError(
+        "operands and result must be tensors of the same element type");
+
+  auto leftShape = leftTTy.getShape();
+  auto rightShape = rightTTy.getShape();
+  auto resShape = resTTy.getShape();
+
+  if (leftShape.size() != 2 || rightShape.size() != 2 || resShape.size() != 2)
+    return emitError("operand- and result tensors must be 2-dimensional");
+
+  if (!ShapedType::isDynamic(leftShape[1]) &&
+      !ShapedType::isDynamic(rightShape[0]) && leftShape[1] != rightShape[0])
+    return emitError("shape mismatch in common dimension");
+
+  if (leftShape[0] != resShape[0])
+    return emitError("result shape mismatch in first dimension");
+
+  if (rightShape[1] != resShape[1])
+    return emitError("result shape mismatch in second dimension");
+
+  return success();
+}
+
+LogicalResult ttl::verifyBinOp(Operation *op) {
+  if (op->getNumOperands() != 2 || op->getNumResults() != 1)
+    return op->emitOpError("is not a binary op");
+
+  Value left, right, res;
+  left = op->getOperand(0);
+  right = op->getOperand(1);
+  res = op->getResult(0);
+
+  Type leftTy = left.getType();
+  Type rightTy = right.getType();
+  Type resTy = res.getType();
+
+  if (!(leftTy == resTy || rightTy == resTy))
+    return op->emitError("neither operand type matches the result type");
+
+  auto leftTTy = dyn_cast<ttl::TensorType>(leftTy);
+  auto rightTTy = dyn_cast<ttl::TensorType>(rightTy);
+
+  // Scalar or elementwise operation
+  if (!(static_cast<bool>(leftTTy) ^ static_cast<bool>(rightTTy))) {
+    if (leftTy != rightTy)
+      return op->emitError("operand types do not match");
+    return success();
+  }
+
+  // Tensor-scalar (or vice versa)
+  if ((leftTTy && leftTTy.getElementType() != rightTy) ||
+      (rightTTy && rightTTy.getElementType() != leftTy))
+    return op->emitError(
+        "scalar operand's type does not match tensor element type");
+
+  return success();
+}

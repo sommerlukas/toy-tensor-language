@@ -15,5 +15,23 @@
 #include "TTLAttributes.h"
 #include "TTLTypes.h"
 
+namespace mlir {
+namespace ttl {
+LogicalResult verifyBinOp(Operation *op);
+}
+
+namespace OpTrait {
+template <typename ConcreteType>
+class ElementwiseOrTensorScalarOrScalarBinaryOp
+    : public TraitBase<ConcreteType,
+                       ElementwiseOrTensorScalarOrScalarBinaryOp> {
+public:
+  static LogicalResult verifyTrait(Operation *op) {
+    return ttl::verifyBinOp(op);
+  }
+};
+} // namespace OpTrait
+} // namespace mlir
+
 #define GET_OP_CLASSES
 #include "Dialect/TTL/TTLOps.h.inc"
