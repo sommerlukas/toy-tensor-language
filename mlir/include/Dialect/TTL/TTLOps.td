@@ -8,8 +8,8 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
-class TTLBinaryOp<string mnemonic, list<Trait> traits = []> : 
-        TTLOp<mnemonic, traits> {
+class TTLBinaryOp<string mnemonic> :
+        TTLOp<mnemonic, [ElementwiseOrTensorScalarOrScalarBinaryOp]> {
   
   let summary = "TTL binary operation";
 
@@ -31,9 +31,18 @@ def Add : TTLBinaryOp<"add">;
 def Sub : TTLBinaryOp<"sub">;
 def Mul : TTLBinaryOp<"mul">;
 def Div : TTLBinaryOp<"div">;
-def MatMul : TTLBinaryOp<"matmul"> { let hasVerifier = 1; }
 def And : TTLBinaryOp<"and">;
 def Or : TTLBinaryOp<"or">;
+
+def MatMul : TTLOp<"matmul"> {
+  let summary = "TTL matrix multiplication operation";
+  
+  let arguments = (ins TTLValueType:$left, TTLValueType:$right);
+
+  let results = (outs TTLValueType:$opResult);
+
+  let hasVerifier = 1;
+}
 
 def Minus : TTLUnaryOp<"minus">;
 def Not : TTLUnaryOp<"not">;

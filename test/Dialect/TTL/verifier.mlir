@@ -72,3 +72,35 @@ func.func @matmul_6(%a: !ttl.tensor<?x?x!ttl.float>, %b: !ttl.tensor<?x3x!ttl.fl
   %c = "ttl.matmul"(%a, %b) : (!ttl.tensor<?x?x!ttl.float>, !ttl.tensor<?x3x!ttl.float>) -> !ttl.tensor<?x4x!ttl.float>
   "ttl.return"(%c) : (!ttl.tensor<?x4x!ttl.float>) -> ()
 }
+
+// -----
+
+func.func @bin_op_trait_1(%a: !ttl.int, %b: !ttl.int) -> !ttl.float {
+  // @expected-error@below {{neither operand type matches the result type}}
+  %c = "ttl.add"(%a, %b) : (!ttl.int, !ttl.int) -> !ttl.float
+  "ttl.return"(%c) : (!ttl.float) -> ()
+}
+
+// -----
+
+func.func @bin_op_trait_2(%a: !ttl.int, %b: !ttl.float) -> !ttl.float {
+  // @expected-error@below {{operand types do not match}}
+  %c = "ttl.sub"(%a, %b) : (!ttl.int, !ttl.float) -> !ttl.float
+  "ttl.return"(%c) : (!ttl.float) -> ()
+}
+
+// -----
+
+func.func @bin_op_trait_3(%a: !ttl.tensor<1x?x!ttl.float>, %b: !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float> {
+  // @expected-error@below {{operand types do not match}}
+  %c = "ttl.mul"(%a, %b) : (!ttl.tensor<1x?x!ttl.float>, !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float>
+  "ttl.return"(%c) : (!ttl.tensor<?x?x!ttl.float>) -> ()
+}
+
+// -----
+
+func.func @bin_op_trait_4(%a: !ttl.int, %b: !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float> {
+  // @expected-error@below {{scalar operand's type does not match tensor element type}}
+  %c = "ttl.div"(%a, %b) : (!ttl.int, !ttl.tensor<?x?x!ttl.float>) -> !ttl.tensor<?x?x!ttl.float>
+  "ttl.return"(%c) : (!ttl.tensor<?x?x!ttl.float>) -> ()
+}

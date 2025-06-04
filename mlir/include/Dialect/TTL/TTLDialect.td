@@ -19,5 +19,7 @@ def TTLDialect : Dialect {
 class TTLOp<string mnemonic, list<Trait> traits = []> : 
         Op<TTLDialect, mnemonic, traits>;
 
+def ElementwiseOrTensorScalarOrScalarBinaryOp :
+  NativeOpTrait<"ElementwiseOrTensorScalarOrScalarBinaryOp">;
 
 #endif // TTL_DIALECT

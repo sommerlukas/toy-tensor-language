@@ -154,3 +154,38 @@ LogicalResult MatMul::verify() {
 
   return success();
 }
+
+LogicalResult ttl::verifyBinOp(Operation *op) {
+  if (op->getNumOperands() != 2 || op->getNumResults() != 1)
+    return op->emitOpError("is not a binary op");
+
+  Value left, right, res;
+  left = op->getOperand(0);
+  right = op->getOperand(1);
+  res = op->getResult(0);
+
+  Type leftTy = left.getType();
+  Type rightTy = right.getType();
+  Type resTy = res.getType();
+
+  if (!(leftTy == resTy || rightTy == resTy))
+    return op->emitError("neither operand type matches the result type");
+
+  auto leftTTy = dyn_cast<ttl::TensorType>(leftTy);
+  auto rightTTy = dyn_cast<ttl::TensorType>(rightTy);
+
+  // Scalar or elementwise operation
+  if (!(static_cast<bool>(leftTTy) ^ static_cast<bool>(rightTTy))) {
+    if (leftTy != rightTy)
+      return op->emitError("operand types do not match");
+    return success();
+  }
+
+  // Tensor-scalar (or vice versa)
+  if ((leftTTy && leftTTy.getElementType() != rightTy) ||
+      (rightTTy && rightTTy.getElementType() != leftTy))
+    return op->emitError(
+        "scalar operand's type does not match tensor element type");
+
+  return success();
+}
