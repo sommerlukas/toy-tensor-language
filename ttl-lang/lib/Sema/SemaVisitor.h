@@ -32,6 +32,7 @@ class SemaVisitor : public ast::ASTVisitor {
     void visit(ast::SliceExpr*)override;
     void visit(ast::UnExpr*)override;
     void visit(ast::BinExpr*)override;
+    void visit(ast::CondExpr*)override;
     void visit(ast::MatrixInit*)override;
     void visit(ast::RangeExpr*)override;
     void visit(ast::CallExpr*)override;
