@@ -31,7 +31,7 @@ def Add : TTLBinaryOp<"add">;
 def Sub : TTLBinaryOp<"sub">;
 def Mul : TTLBinaryOp<"mul">;
 def Div : TTLBinaryOp<"div">;
-def MatMul : TTLBinaryOp<"matmul">;
+def MatMul : TTLBinaryOp<"matmul"> { let hasVerifier = 1; }
 def And : TTLBinaryOp<"and">;
 def Or : TTLBinaryOp<"or">;
 
