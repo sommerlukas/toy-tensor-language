@@ -26,6 +26,9 @@ template <> bool checkType<FloatType>(TypePtr ToCheck) {
 template <> bool checkType<RangeType>(TypePtr ToCheck) {
   return ToCheck->isRangeTy();
 }
+template <> bool checkType<WholeRangeType>(TypePtr ToCheck) {
+  return ToCheck->isWholeRangeTy();
+}
 template <> bool checkType<MatrixType>(TypePtr ToCheck) {
   return ToCheck->isMatrixTy();
 }
@@ -95,13 +98,14 @@ void SemaVisitor::visit(Function *Node) {
     reportError(Node, "Cannot redefine function with name", Node->name());
   }
   FuncDecls[Node->name()] = Node;
-  if (Node->returnType()->isRangeTy()) {
+  if (Node->returnType()->isRangeTy() || Node->returnType()->isWholeRangeTy()) {
     reportError(Node, "Cannot return range from function");
   }
   ReturnAllowed.push(Node->returnType());
   Table.push();
   for (auto *P : Node->params()) {
-    if (P->ty()->isRangeTy() || P->ty()->isVoidTy()) {
+    if (P->ty()->isRangeTy() || Node->returnType()->isWholeRangeTy() ||
+        P->ty()->isVoidTy()) {
       reportError(Node, "Cannot declare parameter of type void or range");
     }
     if (Table.add(P)) {
@@ -117,7 +121,8 @@ void SemaVisitor::visit(Function *Node) {
 }
 
 void SemaVisitor::visit(VarDef *Node) {
-  if (Node->ty()->isRangeTy() || Node->ty()->isVoidTy()) {
+  if (Node->ty()->isRangeTy() || Node->ty()->isWholeRangeTy() ||
+      Node->ty()->isVoidTy()) {
     reportError(Node, "Cannot define variable of type range or void");
   }
   if (Table.add(Node)) {
@@ -206,7 +211,7 @@ void SemaVisitor::visit(ScalarAssign *Node) {
                 Node->name());
   }
   auto LHSTy = Ref->ty();
-  if (LHSTy->isVoidTy() || LHSTy->isRangeTy()) {
+  if (LHSTy->isVoidTy() || LHSTy->isRangeTy() || LHSTy->isWholeRangeTy()) {
     reportError(Node, "Cannot assign to void or ranges");
   }
   Node->ref(Ref);
@@ -279,7 +284,7 @@ void SemaVisitor::visit(SliceExpr *Node) {
   llvm::SmallVector<MatrixSize> SliceSize;
   for (ExprPtr Slice : Node->slices()) {
     Slice->accept(this);
-    checkTypeConstraint<IntType, RangeType>(Slice);
+    checkTypeConstraint<IntType, RangeType, WholeRangeType>(Slice);
     AllInteger &= Slice->ty()->isIntTy();
     // TODO: We could do better here if we can detect constant ranges.
     if (Slice->ty()->isIntTy()) {
@@ -427,6 +432,10 @@ void SemaVisitor::visit(RangeExpr *Node) {
   Node->end()->accept(this);
   checkTypeConstraint<IntType>(Node->end());
   Node->ty(Node->context()->getRangeTy());
+}
+
+void SemaVisitor::visit(WholeRangeExpr *Node) {
+  Node->ty(Node->context()->getWholeRangeTy());
 }
 
 void SemaVisitor::visit(CallExpr *Node) {
