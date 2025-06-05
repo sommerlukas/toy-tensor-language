@@ -405,6 +405,32 @@ void SemaVisitor::visit(BinExpr *Node) {
   Node->ty(ResultTy);
 }
 
+void SemaVisitor::visit(CondExpr *Node) {
+  Node->cond()->accept(this);
+  Node->trueExpr()->accept(this);
+  Node->falseExpr()->accept(this);
+
+  checkTypeConstraint<IntType>(Node->cond());
+
+  auto TrueTy = Node->trueExpr()->ty();
+  auto FalseTy = Node->falseExpr()->ty();
+
+  // TODO(Alcpz): Is the node reachable with WholeRangeTy?
+  if (TrueTy->isVoidTy() || FalseTy->isVoidTy()) {
+    reportError(Node, "Ternary expression cannot have 'void' branches");
+    return;
+  }
+
+  if (TrueTy == FalseTy) {
+    Node->ty(TrueTy);
+    return;
+  }
+
+  // TODO(Alcpz): Int to float // Float to int?
+  reportError(Node, "Mismatched types in ternary conditional: ",
+                    TrueTy, " and ", FalseTy);
+}
+
 void SemaVisitor::visit(MatrixInit *Node) {
   for (auto *E : Node->elems()) {
     E->accept(this);

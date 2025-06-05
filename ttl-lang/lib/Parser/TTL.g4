@@ -35,7 +35,7 @@ type:           scalarType
                 | matrixType
                 ;
 
-scalarType:		  intType | floatType;
+scalarType:     intType | floatType;
 intType:        'int';
 floatType:      'float';
 voidType:       'void' ;
@@ -58,6 +58,7 @@ expr:
                 | '!' expr                                                        # BooleanNot
                 | expr '&' expr                                                   # And
                 | expr '|' expr                                                   # Or
+                | expr '?' expr ':' expr                                          # CondExpr
 // Atoms
                 | '[' expr (',' expr)* ']'                                        # MInit
                 | '(' expr ')'                                                    # ParExpr
