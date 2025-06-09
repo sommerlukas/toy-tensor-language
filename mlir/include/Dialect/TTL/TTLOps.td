@@ -7,6 +7,7 @@ include "Dialect/TTL/TTLTypes.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/TilingInterface.td"
 
 class TTLBinaryOp<string mnemonic, list<Trait> traits = []> : 
         TTLOp<mnemonic, traits> {
@@ -31,7 +32,12 @@ def Add : TTLBinaryOp<"add">;
 def Sub : TTLBinaryOp<"sub">;
 def Mul : TTLBinaryOp<"mul">;
 def Div : TTLBinaryOp<"div">;
-def MatMul : TTLBinaryOp<"matmul"> { let hasVerifier = 1; }
+def MatMul : TTLBinaryOp<"matmul", 
+  [DeclareOpInterfaceMethods<TilingInterface,
+    ["getIterationDomain",
+     "getLoopIteratorTypes",
+     "getResultTilePosition",
+     "getTiledImplementation"]>]> { let hasVerifier = 1; }
 def And : TTLBinaryOp<"and">;
 def Or : TTLBinaryOp<"or">;
 
@@ -187,8 +193,20 @@ def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {
   }];
 }
 
+def IndexCast : TTLOp<"index_cast"> {
+  let summary = "Cast between TTL integer and index type";
+  let arguments = (ins AnyTypeOf<[TTLIntType, Index]>:$input);
+  let results = (outs AnyTypeOf<[TTLIntType, Index]>:$output);
+  let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
+}
 
-// TODO: Compare, Constant
-// TODO: For, If, Return
+def TensorSliceInsert : TTLOp<"tensor_slice_insert"> {
+  let summary = "TTL insert slice into tensor";
+
+  let arguments = (ins TTLTensorType:$dest, TTLTensorType:$slice, 
+                        Variadic<TTLIntType>:$indices);
+
+  let results = (outs TTLTensorType:$tensor);
+}
 
 #endif // MLIR_INCLUDE_DIALECT_TTL_TTLOPS

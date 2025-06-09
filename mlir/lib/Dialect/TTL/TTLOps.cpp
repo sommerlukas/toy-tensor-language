@@ -3,6 +3,7 @@
 #include "Dialect/TTL/TTLDialect.h"
 #include "Dialect/TTL/TTLTypes.h"
 #include "mlir/IR/OpImplementation.h"
+#include <llvm/Support/Debug.h>
 
 #define GET_OP_CLASSES
 #include "Dialect/TTL/TTLOps.cpp.inc"
@@ -155,3 +156,138 @@ LogicalResult MatMul::verify() {
 
   return success();
 }
+
+SmallVector<Range> MatMul::getIterationDomain(OpBuilder &builder) {
+  auto Loc = getLoc();
+  auto getSize = [&](Value tensorOp, unsigned index) -> OpFoldResult {
+    auto opTy = cast<ttl::TensorType>(tensorOp.getType());
+    auto opShape = opTy.getShape();
+    if (!ShapedType::isDynamic(opShape[index])) {
+      return builder.getIndexAttr(opShape[index]);
+    } else {
+      auto indexCst = builder.create<mlir::ttl::IntConstant>(Loc, index);
+      auto dim = builder.create<mlir::ttl::Dim>(Loc, tensorOp, indexCst);
+      return builder
+          .create<mlir::ttl::IndexCast>(Loc, builder.getIndexType(), dim)
+          .getOutput();
+    }
+  };
+  OpFoldResult zero = builder.getIndexAttr(0);
+  OpFoldResult one = builder.getIndexAttr(1);
+
+  SmallVector<Range> loopBounds(3);
+  // M
+  loopBounds[0].offset = zero;
+  loopBounds[0].size = getSize(getLeft(), 0);
+  loopBounds[0].stride = one;
+  // N
+  loopBounds[1].offset = zero;
+  loopBounds[1].size = getSize(getRight(), 1);
+  loopBounds[1].stride = one;
+  // K
+  loopBounds[2].offset = zero;
+  loopBounds[2].size = getSize(getLeft(), 1);
+  loopBounds[2].stride = one;
+
+  llvm::dbgs() << "Returning iteration domain\n";
+
+  return loopBounds;
+}
+
+SmallVector<utils::IteratorType> MatMul::getLoopIteratorTypes() {
+  return SmallVector<utils::IteratorType>{utils::IteratorType::parallel,
+                                          utils::IteratorType::parallel,
+                                          utils::IteratorType::reduction};
+}
+
+LogicalResult MatMul::getResultTilePosition(
+    OpBuilder &builder, unsigned resultNumber, ArrayRef<OpFoldResult> offsets,
+    ArrayRef<OpFoldResult> sizes, SmallVector<OpFoldResult> &resultOffsets,
+    SmallVector<OpFoldResult> &resultSizes) {
+  llvm::dbgs() << "Result number: " << resultNumber << "\n";
+  llvm::dbgs() << "Offsets:\n";
+  for (const auto &off : offsets) {
+    off.dump();
+  }
+  llvm::dbgs() << "Sizes:\n";
+  for (const auto &s : sizes) {
+    s.dump();
+  }
+  if(resultNumber != 0){
+    return failure();
+  }
+
+  resultOffsets.push_back(offsets[0]);
+  resultOffsets.push_back(offsets[1]);
+  resultSizes.push_back(sizes[0]);
+  resultSizes.push_back(sizes[1]);
+  return success();
+}
+
+FailureOr<TilingResult>
+MatMul::getTiledImplementation(OpBuilder &builder,
+                               ArrayRef<OpFoldResult> offsets,
+                               ArrayRef<OpFoldResult> sizes) {
+  llvm::dbgs() << "Offsets:\n";
+  for (const auto &off : offsets) {
+    off.dump();
+  }
+  llvm::dbgs() << "Sizes:\n";
+  for (const auto &s : sizes) {
+    s.dump();
+  }
+  auto Loc = getLoc();
+  auto TTLIntTy = mlir::ttl::IntType::get(getContext());
+  auto toTTLInt = [&](OpFoldResult idx) -> Value {
+    if (auto IdxVal = dyn_cast<Value>(idx)) {
+      return builder.create<mlir::ttl::IndexCast>(Loc, TTLIntTy, IdxVal)
+          .getOutput();
+    }
+    auto RawAttr = cast<mlir::Attribute>(idx);
+    auto IdxAttr = cast<mlir::IntegerAttr>(RawAttr);
+    return builder.create<mlir::ttl::IntConstant>(
+        Loc, IdxAttr.getValue().getZExtValue());
+  };
+
+  auto elemTy =
+      cast<mlir::ttl::TensorType>(getLeft().getType()).getElementType();
+
+  auto extractTensor = [&](Value tensor, unsigned idx1,
+                           unsigned idx2) -> Value {
+    SmallVector<Value> sliceOffsets;
+    sliceOffsets.push_back(toTTLInt(offsets[idx1]));
+    sliceOffsets.push_back(toTTLInt(offsets[idx2]));
+    SmallVector<Value> sliceSizes;
+    sliceSizes.push_back(toTTLInt(sizes[idx1]));
+    sliceSizes.push_back(toTTLInt(sizes[idx2]));
+    auto sliceTy = mlir::ttl::TensorType::get(
+        elemTy, {ShapedType::kDynamic, ShapedType::kDynamic});
+    return builder
+        .create<mlir::ttl::Slice>(Loc, sliceTy, tensor, sliceOffsets,
+                                  sliceSizes)
+        .getResult();
+  };
+
+  auto leftSlice = extractTensor(getLeft(), 0, 2);
+  auto rightSlice = extractTensor(getRight(), 2, 1);
+
+  auto getSize = [&](OpFoldResult size) -> int64_t {
+    if (isa<Value>(size)) {
+      return ShapedType::kDynamic;
+    }
+    auto rawAttr = cast<mlir::Attribute>(size);
+    auto attr = cast<mlir::IntegerAttr>(rawAttr);
+    return attr.getValue().getZExtValue();
+    return 0;
+  };
+  auto tileTy = mlir::ttl::TensorType::get(
+      elemTy, {getSize(sizes[0]), getSize(sizes[1])});
+  Operation *matmulTile =
+      builder.create<mlir::ttl::MatMul>(Loc, tileTy, leftSlice, rightSlice);
+
+  return TilingResult{{matmulTile},
+                      {matmulTile->getResult(0)},
+                      {leftSlice.getDefiningOp(), rightSlice.getDefiningOp()}};
+}
+
+// https://github.com/llvm/llvm-project/blob/main/mlir/test/Interfaces/TilingInterface/tile-using-interface.mlir
