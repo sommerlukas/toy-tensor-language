@@ -1,4 +1,5 @@
 // RUN: ttl-opt --inline %s | FileCheck %s
+
 module {
   func.func @callee(%arg0: !ttl.int, %arg1: !ttl.int, %arg2: !ttl.int, %arg3: !ttl.int) -> !ttl.float {
     %0 = "ttl.tensor_empty"() : () -> !ttl.tensor<8x8x!ttl.float>
