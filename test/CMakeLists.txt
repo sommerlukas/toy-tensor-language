@@ -7,7 +7,7 @@ configure_lit_site_cfg(
 
 set(TTL_TEST_DEPENDS
         FileCheck count not
-        ttl-cc
+        ttl-cc ttl-opt
         )
 
 add_lit_testsuite(check-ttl "Running the TTL regression tests"

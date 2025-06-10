@@ -8,14 +8,21 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
-class TTLBinaryOp<string mnemonic> :
+class TTLArithBinaryOp<string mnemonic> :
         TTLOp<mnemonic, [ElementwiseOrTensorScalarOrScalarBinaryOp]> {
-  
-  let summary = "TTL binary operation";
+  let summary = "TTL arithmetic binary operation";
 
   let arguments = (ins TTLValueType:$left, TTLValueType:$right);
 
   let results = (outs TTLValueType:$opResult);
+}
+
+class TTLLogicalBinaryOp<string mnemonic> : TTLOp<mnemonic> {
+  let summary = "TTL logical binary operation";
+
+  let arguments = (ins TTLIntType:$left, TTLIntType:$right);
+
+  let results = (outs TTLIntType:$opResult);
 }
 
 class TTLUnaryOp<string mnemonic> :
@@ -27,19 +34,19 @@ class TTLUnaryOp<string mnemonic> :
   let results = (outs TTLValueType:$opResult);
 }
 
-def Add : TTLBinaryOp<"add">;
-def Sub : TTLBinaryOp<"sub">;
-def Mul : TTLBinaryOp<"mul">;
-def Div : TTLBinaryOp<"div">;
-def And : TTLBinaryOp<"and">;
-def Or : TTLBinaryOp<"or">;
+def Add : TTLArithBinaryOp<"add">;
+def Sub : TTLArithBinaryOp<"sub">;
+def Mul : TTLArithBinaryOp<"mul">;
+def Div : TTLArithBinaryOp<"div">;
+def And : TTLLogicalBinaryOp<"and">;
+def Or : TTLLogicalBinaryOp<"or">;
 
 def MatMul : TTLOp<"matmul"> {
   let summary = "TTL matrix multiplication operation";
   
-  let arguments = (ins TTLValueType:$left, TTLValueType:$right);
+  let arguments = (ins TTLTensorType:$left, TTLTensorType:$right);
 
-  let results = (outs TTLValueType:$opResult);
+  let results = (outs TTLTensorType:$opResult);
 
   let hasVerifier = 1;
 }
