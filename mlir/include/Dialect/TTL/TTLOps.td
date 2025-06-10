@@ -7,6 +7,7 @@ include "Dialect/TTL/TTLTypes.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/LoopLikeInterface.td"
 
 class TTLArithBinaryOp<string mnemonic> :
         TTLOp<mnemonic, [ElementwiseOrTensorScalarOrScalarBinaryOp]> {
@@ -17,7 +18,7 @@ class TTLArithBinaryOp<string mnemonic> :
   let results = (outs TTLValueType:$opResult);
 }
 
-class TTLLogicalBinaryOp<string mnemonic> : TTLOp<mnemonic> {
+class TTLLogicalBinaryOp<string mnemonic> : TTLOp<mnemonic, [Pure]> {
   let summary = "TTL logical binary operation";
 
   let arguments = (ins TTLIntType:$left, TTLIntType:$right);
@@ -178,7 +179,11 @@ def If : TTLOp<"if"> {
   }];
 }
 
-def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {
+def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">, 
+    DeclareOpInterfaceMethods<LoopLikeOpInterface,
+       ["getInitsMutable", "getLoopResults", "getRegionIterArgs",
+        "getLoopInductionVars", "getLoopLowerBounds", "getLoopSteps",
+        "getLoopUpperBounds", "getYieldedValuesMutable"]>]> {
   let summary = "TTL for loop";
 
   let arguments = (ins TTLIntType:$lowerBound, 

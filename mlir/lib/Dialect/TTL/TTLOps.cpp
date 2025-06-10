@@ -219,3 +219,35 @@ LogicalResult ttl::verifyBinOp(Operation *op) {
 
   return success();
 }
+
+SmallVector<Region *> ForLoop::getLoopRegions() { return {&getBodyRegion()}; }
+
+std::optional<SmallVector<Value>> ForLoop::getLoopInductionVars() {
+  return SmallVector<Value>{getBody()->getArgument(0)};
+}
+
+std::optional<SmallVector<OpFoldResult>> ForLoop::getLoopLowerBounds() {
+  return SmallVector<OpFoldResult>{getLowerBound()};
+}
+
+std::optional<SmallVector<OpFoldResult>> ForLoop::getLoopUpperBounds() {
+  return SmallVector<OpFoldResult>{getUpperBound()};
+}
+
+std::optional<SmallVector<OpFoldResult>> ForLoop::getLoopSteps() {
+  return SmallVector<OpFoldResult>{getStep()};
+}
+
+Block::BlockArgListType ForLoop::getRegionIterArgs() {
+  return getBody()->getArguments().drop_front(1);
+}
+
+MutableArrayRef<OpOperand> ForLoop::getInitsMutable() {
+  return getInitArgsMutable();
+}
+
+std::optional<MutableArrayRef<OpOperand>> ForLoop::getYieldedValuesMutable() {
+  return cast<ttl::Yield>(getBody()->getTerminator()).getResultsMutable();
+}
+
+std::optional<ResultRange> ForLoop::getLoopResults() { return getResults(); }
