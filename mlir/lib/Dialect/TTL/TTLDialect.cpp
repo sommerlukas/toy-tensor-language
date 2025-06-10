@@ -30,7 +30,7 @@ struct TTLInlinerInterface : public DialectInlinerInterface {
       return;
     }
 
-    for (auto retValue : llvm::zip(valuesToRepl, op->getOperands())) {
+    for (auto retValue : llvm::zip_equal(valuesToRepl, op->getOperands())) {
       std::get<0>(retValue).replaceAllUsesWith(std::get<1>(retValue));
     }
   }
