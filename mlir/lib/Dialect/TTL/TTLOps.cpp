@@ -126,11 +126,10 @@ LogicalResult Return::verify() {
 }
 
 LogicalResult MatMul::verify() {
-  auto leftTTy = dyn_cast<ttl::TensorType>(getLeft().getType());
-  auto rightTTy = dyn_cast<ttl::TensorType>(getRight().getType());
-  auto resTTy = dyn_cast<ttl::TensorType>(getType());
-  if (!leftTTy || !rightTTy || !resTTy ||
-      leftTTy.getElementType() != rightTTy.getElementType() ||
+  auto leftTTy = cast<ttl::TensorType>(getLeft().getType());
+  auto rightTTy = cast<ttl::TensorType>(getRight().getType());
+  auto resTTy = cast<ttl::TensorType>(getType());
+  if (leftTTy.getElementType() != rightTTy.getElementType() ||
       rightTTy.getElementType() != resTTy.getElementType())
     return emitError(
         "operands and result must be tensors of the same element type");
@@ -152,6 +151,71 @@ LogicalResult MatMul::verify() {
 
   if (!(rightShape[1] == resShape[1] || ShapedType::isDynamic(resShape[1])))
     return emitError("result shape mismatch in second dimension");
+
+  return success();
+}
+
+static bool canAssignTo(Type fromTy, Type toTy) {
+  // Check trivial situation first.
+  if (fromTy == toTy)
+    return true;
+
+  auto fromTTy = dyn_cast<ttl::TensorType>(fromTy);
+  auto toTTy = dyn_cast<ttl::TensorType>(toTy);
+
+  // Only continue if both types are tensors. If not, we either have different
+  // scalar types, or a combination of tensor and scalar.
+  if (!(fromTTy && toTTy))
+    return false;
+
+  if (fromTTy.getElementType() != toTTy.getElementType())
+    return false;
+
+  auto fromShape = fromTTy.getShape();
+  auto toShape = toTTy.getShape();
+  if (fromShape.size() != toShape.size())
+    return false;
+
+  return llvm::all_of_zip(fromShape, toShape, [](auto df, auto dt) {
+    return df == dt || ShapedType::isDynamic(dt);
+  });
+}
+
+LogicalResult ttl::verifyBinOp(Operation *op) {
+  if (op->getNumOperands() != 2 || op->getNumResults() != 1)
+    return op->emitOpError("is not a binary op");
+
+  Value left, right, res;
+  left = op->getOperand(0);
+  right = op->getOperand(1);
+  res = op->getResult(0);
+
+  Type leftTy = left.getType();
+  Type rightTy = right.getType();
+  Type resTy = res.getType();
+
+  bool leftToRes = canAssignTo(leftTy, resTy);
+  bool rightToRes = canAssignTo(rightTy, resTy);
+
+  auto leftTTy = dyn_cast<ttl::TensorType>(leftTy);
+  auto rightTTy = dyn_cast<ttl::TensorType>(rightTy);
+
+  // Scalar or elementwise operation
+  if (!(static_cast<bool>(leftTTy) ^ static_cast<bool>(rightTTy))) {
+    if (!(leftToRes && rightToRes))
+      return op->emitError("incompatible operand and result types");
+    return success();
+  }
+
+  // Tensor-scalar (or vice versa)
+  if ((leftTTy && leftTTy.getElementType() != rightTy) ||
+      (rightTTy && rightTTy.getElementType() != leftTy))
+    return op->emitError(
+        "scalar operand's type does not match tensor element type");
+
+  if ((leftTTy && !leftToRes) || (rightTTy && !rightToRes))
+    return op->emitError(
+        "tensor operand's type cannot be assigned to the result type");
 
   return success();
 }
