@@ -13,6 +13,7 @@
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 
 int main(int argc, char **argv) {
   // Register passes, including TTL conversion passes.
@@ -48,6 +49,7 @@ int main(int argc, char **argv) {
   mlir::scf::registerBufferDeallocationOpInterfaceExternalModels(Registry);
   mlir::scf::registerBufferizableOpInterfaceExternalModels(Registry);
   mlir::tensor::registerBufferizableOpInterfaceExternalModels(Registry);
+  mlir::func::registerInlinerExtension(Registry);
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "TTL MLIR optimizer driver\n", Registry));

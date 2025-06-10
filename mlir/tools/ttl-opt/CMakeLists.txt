@@ -8,6 +8,7 @@ set(LIBS
         TTLToTensor
         TTLToLinalg
         TTLToScalar
+        MLIRFuncInlinerExtension
         )
 add_llvm_executable(ttl-opt ttl-opt.cpp)
 
