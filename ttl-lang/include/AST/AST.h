@@ -354,6 +354,23 @@ public:
   ExprPtr right() { return Right; }
 };
 
+class CondExpr : public Expr<CondExpr> {
+
+  CondExpr(ExprPtr Cond, ExprPtr TrueExpr, ExprPtr FalseExpr)
+      : Cond{Cond}, TrueExpr{TrueExpr}, FalseExpr{FalseExpr} {}
+
+  ExprPtr Cond;
+  ExprPtr TrueExpr;
+  ExprPtr FalseExpr;
+
+  friend ASTContext;
+
+public:
+  ExprPtr cond() { return Cond; }
+  ExprPtr trueExpr() { return TrueExpr; }
+  ExprPtr falseExpr() { return FalseExpr; }
+};
+
 enum UnOp { NOT, MINUS };
 
 class UnExpr : public Expr<UnExpr> {

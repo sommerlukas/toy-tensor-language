@@ -342,3 +342,16 @@ The unary not `!` expression inverts a boolean value.
 
 The binary operators `&` (and) and `|` (or) perform a logical "and" and "or"
 operation on boolean values.
+
+### Ternary Conditional Expression
+
+The C-like ternary conditional expression allows branching between two values based on a condition.
+Its syntax is:
+
+```
+cond ? true_expr : false_expr
+```
+
+- `cond` must be of type int.
+- `true_expr` and `false_expr` must both be non-void and of the same type.
+

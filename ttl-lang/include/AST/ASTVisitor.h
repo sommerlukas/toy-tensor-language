@@ -18,6 +18,7 @@ class CompoundStmt;
 class SliceExpr;
 class UnExpr;
 class BinExpr;
+class CondExpr;
 class MatrixInit;
 class RangeExpr;
 class CallExpr;
@@ -46,6 +47,7 @@ public:
   virtual void visit(ast::SliceExpr *){}
   virtual void visit(ast::UnExpr *){}
   virtual void visit(ast::BinExpr *){}
+  virtual void visit(ast::CondExpr *){}
   virtual void visit(ast::MatrixInit *){}
   virtual void visit(ast::RangeExpr *){}
   virtual void visit(ast::CallExpr *){}
