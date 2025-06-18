@@ -1,6 +1,8 @@
 
 #include "Conversion/Passes.h"
 #include "Dialect/TTL/TTLDialect.h"
+#include "Transform/TTLPasses.h"
+#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -13,11 +15,11 @@
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
-#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 
 int main(int argc, char **argv) {
   // Register passes, including TTL conversion passes.
   mlir::registerAllPasses();
+  mlir::ttl::registerTTLEliminateInitLoops();
   mlir::ttl::registerTTLToTensor();
   mlir::ttl::registerTTLToLinalg();
   mlir::ttl::registerTTLToScalar();
