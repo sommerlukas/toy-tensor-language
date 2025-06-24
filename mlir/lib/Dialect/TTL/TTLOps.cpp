@@ -107,7 +107,7 @@ void TensorListInit::getCanonicalizationPatterns(RewritePatternSet &patterns,
   patterns.add(std::make_unique<ListInitCanonicalizer>(context));
 }
 
-static bool isCompatibleSize(uint64_t aSz, uint64_t bSz) {
+static bool isCompatibleSize(int64_t aSz, int64_t bSz) {
   // Allowed: ? -> ?, 4 -> 4, ? -> 4, 4 -> ?, but not: 4 -> 5
   return aSz == bSz || ShapedType::isDynamic(aSz) || ShapedType::isDynamic(bSz);
 }
