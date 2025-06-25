@@ -73,11 +73,10 @@ private:
       return false;
     }
 
-    // 4. The init val of the loop must be a TensorEmpty which only has a single
-    // user (the loop).
+    // 4. The init val of the loop must be a TensorEmpty.
     auto maybeTensorEmpty = dyn_cast<ttl::TensorEmpty>(
         forLoop.getInitArgs().front().getDefiningOp());
-    if (!maybeTensorEmpty || !maybeTensorEmpty.getTensor().hasOneUse()) {
+    if (!maybeTensorEmpty) {
       LLVM_DEBUG(llvm::dbgs() << "Failed condition 4\n");
       return false;
     }
@@ -110,12 +109,18 @@ private:
     // Our candidate fulfills all conditions, so we are going to perform the
     // transformation:
     // 1. Replace the loop with a TensorRangeInit.
-    // 2. Erase the original TensorEmpty.
+    // 2. Erase the original TensorEmpty if it only has a single use (the loop).
+    bool eraseEmpty = maybeTensorEmpty.getTensor().hasOneUse();
     IRRewriter rewriter(forLoop);
     rewriter.replaceOpWithNewOp<ttl::TensorRangeInit>(
         forLoop, forLoop.getResultTypes().front(), forLoop.getLowerBound(),
         forLoop.getUpperBound());
-    rewriter.eraseOp(maybeTensorEmpty);
+
+    if (eraseEmpty) {
+      // We explicitly erase the operation, because TensorEmpty is not Pure, so
+      // it won't be removed by DCE.
+      rewriter.eraseOp(maybeTensorEmpty);
+    }
 
     return true;
   }

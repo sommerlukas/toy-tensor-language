@@ -108,7 +108,7 @@ func.func @init_loop4() -> !ttl.tensor<2x4x!ttl.int> {
   "ttl.return"(%5) : (!ttl.tensor<2x4x!ttl.int>) -> ()
 }
 
-// COM: An example that fails because there's another user of the TensorEmpty.
+// COM: A loop that gets removed, while the other use continues to use the original TensorEmpty.
 // CHECK-LABEL:   func.func @init_loop5() -> !ttl.tensor<8x!ttl.int> {
 // CHECK:           %[[VAL_0:.*]] = ttl.const_int 0
 // CHECK:           %[[VAL_1:.*]] = ttl.const_int 8
@@ -116,11 +116,7 @@ func.func @init_loop4() -> !ttl.tensor<2x4x!ttl.int> {
 // CHECK:           %[[VAL_3:.*]] = ttl.const_int 0
 // CHECK:           %[[VAL_4:.*]] = call @tensor_func(%[[VAL_2]]) : (!ttl.tensor<8x!ttl.int>) -> !ttl.tensor<8x!ttl.int>
 // CHECK:           %[[VAL_5:.*]] = ttl.const_int 1
-// CHECK:           %[[VAL_6:.*]] = "ttl.for"(%[[VAL_0]], %[[VAL_1]], %[[VAL_5]], %[[VAL_2]]) ({
-// CHECK:           ^bb0(%[[VAL_7:.*]]: !ttl.int, %[[VAL_8:.*]]: !ttl.tensor<8x!ttl.int>):
-// CHECK:             %[[VAL_9:.*]] = "ttl.tensor_insert"(%[[VAL_8]], %[[VAL_7]], %[[VAL_7]]) : (!ttl.tensor<8x!ttl.int>, !ttl.int, !ttl.int) -> !ttl.tensor<8x!ttl.int>
-// CHECK:             "ttl.yield"(%[[VAL_9]]) : (!ttl.tensor<8x!ttl.int>) -> ()
-// CHECK:           }) : (!ttl.int, !ttl.int, !ttl.int, !ttl.tensor<8x!ttl.int>) -> !ttl.tensor<8x!ttl.int>
+// CHECK:           %[[VAL_6:.*]] = "ttl.tensor_range_init"(%[[VAL_0]], %[[VAL_1]]) : (!ttl.int, !ttl.int) -> !ttl.tensor<8x!ttl.int>
 // CHECK:           "ttl.return"(%[[VAL_6]]) : (!ttl.tensor<8x!ttl.int>) -> ()
 func.func @init_loop5() -> !ttl.tensor<8x!ttl.int> {
   %0 = ttl.const_int 0
