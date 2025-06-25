@@ -75,9 +75,9 @@ func.func @bin_op_trait_1(%a: !ttl.int, %b: !ttl.int) -> !ttl.float {
 
 // -----
 
-func.func @bin_op_trait_2(%a: !ttl.tensor<1x?x!ttl.float>, %b: !ttl.tensor<?x2x!ttl.float>) -> !ttl.tensor<?x2x!ttl.float> {
+func.func @bin_op_trait_2(%a: !ttl.tensor<1x?x!ttl.float>, %b: !ttl.tensor<2x?x!ttl.float>) -> !ttl.tensor<?x2x!ttl.float> {
   // @expected-error@below {{incompatible operand and result types}}
-  %c = "ttl.sub"(%a, %b) : (!ttl.tensor<1x?x!ttl.float>, !ttl.tensor<?x2x!ttl.float>) -> !ttl.tensor<?x2x!ttl.float>
+  %c = "ttl.sub"(%a, %b) : (!ttl.tensor<1x?x!ttl.float>, !ttl.tensor<2x?x!ttl.float>) -> !ttl.tensor<?x2x!ttl.float>
   "ttl.return"(%c) : (!ttl.tensor<?x2x!ttl.float>) -> ()
 }
 

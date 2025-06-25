@@ -107,6 +107,35 @@ void TensorListInit::getCanonicalizationPatterns(RewritePatternSet &patterns,
   patterns.add(std::make_unique<ListInitCanonicalizer>(context));
 }
 
+static bool isCompatibleSize(int64_t aSz, int64_t bSz) {
+  // Allowed: ? -> ?, 4 -> 4, ? -> 4, 4 -> ?, but not: 4 -> 5
+  return aSz == bSz || ShapedType::isDynamic(aSz) || ShapedType::isDynamic(bSz);
+}
+
+static bool isCompatible(Type aTy, Type bTy) {
+  // Check trivial situation first.
+  if (aTy == bTy)
+    return true;
+
+  auto aTTy = dyn_cast<ttl::TensorType>(aTy);
+  auto bTTy = dyn_cast<ttl::TensorType>(bTy);
+
+  // Only continue if both types are tensors. If not, we either have different
+  // scalar types, or a combination of tensor and scalar.
+  if (!(aTTy && bTTy))
+    return false;
+
+  if (aTTy.getElementType() != bTTy.getElementType())
+    return false;
+
+  auto aSh = aTTy.getShape();
+  auto bSh = bTTy.getShape();
+  if (aSh.size() != bSh.size())
+    return false;
+
+  return llvm::all_of_zip(aSh, bSh, isCompatibleSize);
+}
+
 LogicalResult Return::verify() {
   auto function = cast<func::FuncOp>((*this)->getParentOp());
   auto functionResultTypes = function.getFunctionType().getResults();
@@ -116,7 +145,7 @@ LogicalResult Return::verify() {
            << function.getSymName() << " expects " << functionResultTypes.size()
            << " results";
 
-  if (getRetVal().getType() != functionResultTypes.front())
+  if (!isCompatible(getRetVal().getType(), functionResultTypes.front()))
     return emitError("operand is a ")
            << getRetVal().getType() << ", but the enclosing function @"
            << function.getSymName() << " expects "
@@ -145,40 +174,13 @@ LogicalResult MatMul::verify() {
       !ShapedType::isDynamic(rightShape[0]) && leftShape[1] != rightShape[0])
     return emitError("shape mismatch in common dimension");
 
-  // Allowed: ? -> ?, 4 -> 4, 4 -> ?, but not: 4 -> 5, ? -> 4
-  if (!(leftShape[0] == resShape[0] || ShapedType::isDynamic(resShape[0])))
+  if (!isCompatibleSize(leftShape[0], resShape[0]))
     return emitError("result shape mismatch in first dimension");
 
-  if (!(rightShape[1] == resShape[1] || ShapedType::isDynamic(resShape[1])))
+  if (!isCompatibleSize(rightShape[1], resShape[1]))
     return emitError("result shape mismatch in second dimension");
 
   return success();
-}
-
-static bool canAssignTo(Type fromTy, Type toTy) {
-  // Check trivial situation first.
-  if (fromTy == toTy)
-    return true;
-
-  auto fromTTy = dyn_cast<ttl::TensorType>(fromTy);
-  auto toTTy = dyn_cast<ttl::TensorType>(toTy);
-
-  // Only continue if both types are tensors. If not, we either have different
-  // scalar types, or a combination of tensor and scalar.
-  if (!(fromTTy && toTTy))
-    return false;
-
-  if (fromTTy.getElementType() != toTTy.getElementType())
-    return false;
-
-  auto fromShape = fromTTy.getShape();
-  auto toShape = toTTy.getShape();
-  if (fromShape.size() != toShape.size())
-    return false;
-
-  return llvm::all_of_zip(fromShape, toShape, [](auto df, auto dt) {
-    return df == dt || ShapedType::isDynamic(dt);
-  });
 }
 
 LogicalResult ttl::verifyBinOp(Operation *op) {
@@ -194,15 +196,16 @@ LogicalResult ttl::verifyBinOp(Operation *op) {
   Type rightTy = right.getType();
   Type resTy = res.getType();
 
-  bool leftToRes = canAssignTo(leftTy, resTy);
-  bool rightToRes = canAssignTo(rightTy, resTy);
+  bool leftAndRight = isCompatible(leftTy, rightTy);
+  bool leftAndRes = isCompatible(leftTy, resTy);
+  bool rightAndRes = isCompatible(rightTy, resTy);
 
   auto leftTTy = dyn_cast<ttl::TensorType>(leftTy);
   auto rightTTy = dyn_cast<ttl::TensorType>(rightTy);
 
   // Scalar or elementwise operation
   if (!(static_cast<bool>(leftTTy) ^ static_cast<bool>(rightTTy))) {
-    if (!(leftToRes && rightToRes))
+    if (!(leftAndRight && leftAndRes && rightAndRes))
       return op->emitError("incompatible operand and result types");
     return success();
   }
@@ -213,7 +216,7 @@ LogicalResult ttl::verifyBinOp(Operation *op) {
     return op->emitError(
         "scalar operand's type does not match tensor element type");
 
-  if ((leftTTy && !leftToRes) || (rightTTy && !rightToRes))
+  if ((leftTTy && !leftAndRes) || (rightTTy && !rightAndRes))
     return op->emitError(
         "tensor operand's type cannot be assigned to the result type");
 
