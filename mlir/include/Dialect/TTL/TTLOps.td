@@ -185,6 +185,16 @@ def ForLoop : TTLOp<"for", [SingleBlockImplicitTerminator<"ttl::Yield">]> {
 }
 
 
+def CondExpr : TTLOp<"cond_expr", [Pure]> {
+  let summary = "TTL conditional expression (ternary)";
+
+  let arguments = (ins TTLIntType:$cond,
+                       TTLValueType:$trueVal,
+                       TTLValueType:$falseVal);
+
+  let results = (outs TTLValueType:$val);
+}
+
 // TODO: Compare, Constant
 // TODO: For, If, Return
 

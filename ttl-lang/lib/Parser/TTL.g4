@@ -35,7 +35,7 @@ type:           scalarType
                 | matrixType
                 ;
 
-scalarType:     intType | floatType;
+scalarType:		  intType | floatType;
 intType:        'int';
 floatType:      'float';
 voidType:       'void' ;

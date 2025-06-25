@@ -421,14 +421,13 @@ void SemaVisitor::visit(CondExpr *Node) {
     return;
   }
 
-  if (TrueTy == FalseTy) {
-    Node->ty(TrueTy);
-    return;
+  if (TrueTy != FalseTy) {
+    // TODO(Alcpz): Int to float // Float to int?
+    reportError(Node, "Mismatched types in ternary conditional: ", TrueTy,
+                " and ", FalseTy);
   }
 
-  // TODO(Alcpz): Int to float // Float to int?
-  reportError(Node, "Mismatched types in ternary conditional: ",
-                    TrueTy, " and ", FalseTy);
+  Node->ty(TrueTy);
 }
 
 void SemaVisitor::visit(MatrixInit *Node) {
