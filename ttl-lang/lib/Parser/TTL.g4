@@ -58,6 +58,7 @@ expr:
                 | '!' expr                                                        # BooleanNot
                 | expr '&' expr                                                   # And
                 | expr '|' expr                                                   # Or
+                | expr '?' expr ':' expr                                          # CondExpr
 // Atoms
                 | '[' expr (',' expr)* ']'                                        # MInit
                 | '(' expr ')'                                                    # ParExpr

@@ -189,7 +189,7 @@ void CodeGenVisitor::visit(ast::ForLoop *Node) {
   Value Start;
   Value End;
   if (Node->range()->ty()->isRangeTy()) {
-    auto* Range = ::ttl::ast::cast<RangeExpr>(Node->range());
+    auto *Range = ::ttl::ast::cast<RangeExpr>(Node->range());
     Range->start()->accept(this);
     Start = ValueMap[Range->start()];
     Range->end()->accept(this);
@@ -292,7 +292,7 @@ void CodeGenVisitor::visit(ast::SliceExpr *Node) {
       Sizes.push_back(createIntConstant(Node, 1));
       continue;
     }
-    auto* Range = ::ttl::ast::cast<RangeExpr>(S);
+    auto *Range = ::ttl::ast::cast<RangeExpr>(S);
     Value Start = ValueMap[Range->start()];
     Value End = ValueMap[Range->end()];
     Value Size = Builder.create<mlir::ttl::Sub>(translateLoc(Node),
@@ -340,6 +340,23 @@ TTLCmpOpcodesAttr translateCmp(BinOp OpCode, mlir::MLIRContext *Ctx) {
   return TTLCmpOpcodesAttr::get(Ctx, Code);
 }
 } // namespace
+
+void CodeGenVisitor::visit(ast::CondExpr *Node) {
+  Node->cond()->accept(this);
+  Node->trueExpr()->accept(this);
+  Node->falseExpr()->accept(this);
+
+  Value Cond = ValueMap[Node->cond()];
+  Value TrueVal = ValueMap[Node->trueExpr()];
+  Value FalseVal = ValueMap[Node->falseExpr()];
+
+  assert(Node->trueExpr()->ty() == Node->falseExpr()->ty());
+
+  mlir::Type ResultTy = translateType(Node->trueExpr()->ty(), Ctx);
+
+  ValueMap[Node] = Builder.create<mlir::ttl::CondExpr>(
+      translateLoc(Node), ResultTy, Cond, TrueVal, FalseVal);
+}
 
 void CodeGenVisitor::visit(ast::BinExpr *Node) {
   Node->left()->accept(this);

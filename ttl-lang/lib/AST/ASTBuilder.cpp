@@ -205,6 +205,10 @@ std::any ASTBuilder::visitParExpr(TTLParser::ParExprContext *ctx) {
   return ctx->expr()->accept(this);
 }
 
+std::any ASTBuilder::visitCondExpr(TTLParser::CondExprContext *ctx) {
+  return createCondExpr(ctx);
+}
+
 std::any ASTBuilder::visitAnd(TTLParser::AndContext *ctx) {
   return createBinaryOp(ctx, BinOp::AND);
 }

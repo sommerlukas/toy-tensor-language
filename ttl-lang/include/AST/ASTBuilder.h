@@ -69,6 +69,8 @@ public:
 
   std::any visitParExpr(TTLParser::ParExprContext *ctx) override;
 
+  std::any visitCondExpr(TTLParser::CondExprContext *ctx) override;
+
   std::any visitAnd(TTLParser::AndContext *ctx) override;
 
   std::any visitCompare(TTLParser::CompareContext *ctx) override;
@@ -94,6 +96,14 @@ private:
   ast::StmtPtr createStmt(Args &&...args) {
     return static_cast<ast::StmtPtr>(
         ASTCtx->create<StmtT>(std::forward<Args>(args)...));
+  }
+
+  template <typename CondExprCtx>
+  ast::ExprPtr createCondExpr(CondExprCtx *ctx) {
+    auto Cond = std::any_cast<ast::ExprPtr>(ctx->expr(0)->accept(this));
+    auto TrueExpr = std::any_cast<ast::ExprPtr>(ctx->expr(1)->accept(this));
+    auto FalseExpr = std::any_cast<ast::ExprPtr>(ctx->expr(2)->accept(this));
+    return createExpr<ast::CondExpr>(Cond, TrueExpr, FalseExpr);
   }
 
   template <typename BinOpCtx>
