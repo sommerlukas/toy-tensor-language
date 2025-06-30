@@ -43,6 +43,7 @@ public:
   void visit(ast::ReturnStmt *) override;
   void visit(ast::CompoundStmt *) override;
 
+  void visit(ast::CondExpr *) override;
   void visit(ast::SliceExpr *) override;
   void visit(ast::UnExpr *) override;
   void visit(ast::BinExpr *) override;

@@ -1,0 +1,10 @@
+// RUN: ttl-cc %s
+
+function int ternCondInt(int cond, int trueVal, int falseVal){
+  return cond ? trueVal : falseVal ;
+}
+
+function float ternCondFloat(int cond, float trueVal, float falseVal){
+  return cond ? trueVal : falseVal ;
+}
+
