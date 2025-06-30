@@ -247,7 +247,7 @@ if __name__ == "__main__":
                   verbose, save_temps))
     compilation.append(MLIRStage("bufferize",
                                  ["one-shot-bufferize=bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map",
-                                  "buffer-results-to-out-params",
+                                  "buffer-results-to-out-params=hoist-static-allocs",
                                   "buffer-deallocation-pipeline"],
                                  verbose, save_temps))
     compilation.append(
