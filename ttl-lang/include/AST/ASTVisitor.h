@@ -20,6 +20,7 @@ class UnExpr;
 class BinExpr;
 class MatrixInit;
 class RangeExpr;
+class WholeRangeExpr;
 class CallExpr;
 class IDRef;
 class FloatLiteral;
@@ -48,6 +49,7 @@ public:
   virtual void visit(ast::BinExpr *){}
   virtual void visit(ast::MatrixInit *){}
   virtual void visit(ast::RangeExpr *){}
+  virtual void visit(ast::WholeRangeExpr *){}
   virtual void visit(ast::CallExpr *){}
   virtual void visit(ast::IDRef *){}
   virtual void visit(ast::FloatLiteral *){}

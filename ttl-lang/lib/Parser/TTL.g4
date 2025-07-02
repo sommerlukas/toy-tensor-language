@@ -66,6 +66,7 @@ expr:
                 | ID                                                              # IdRef
                 | INT                                                             # IntAtom
                 | FLOAT                                                           # FloatAtom
+                | ':'                                                             # WholeRange
                 ;
 
 callExpr:       ID parameterList ;

@@ -67,6 +67,8 @@ public:
 
   std::any visitRange(TTLParser::RangeContext *ctx) override;
 
+  std::any visitWholeRange(TTLParser::WholeRangeContext *ctx) override;
+
   std::any visitParExpr(TTLParser::ParExprContext *ctx) override;
 
   std::any visitAnd(TTLParser::AndContext *ctx) override;
